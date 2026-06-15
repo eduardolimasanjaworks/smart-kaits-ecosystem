@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1747300000000,
+      "tag": "0000_inicial_crm",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1747400000000,
+      "tag": "0001_cupom",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1747410000000,
+      "tag": "0001_mes_previsto_evento",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1747500000000,
+      "tag": "0002_fase3_fundacao",
+      "breakpoints": true
+    }
+  ]
+}

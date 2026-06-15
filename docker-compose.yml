@@ -1,0 +1,216 @@
+services:
+  # Infrastructure
+  smart-postgres:
+    image: postgres:16
+    container_name: smart-kaits-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: smartuser
+      POSTGRES_PASSWORD: smartpassword
+      POSTGRES_DB: smartdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./apps/ai-agent-completo/docker/postgres-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - smart-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartuser -d smartdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  smart-evolution:
+    image: ${EVOLUTION_DOCKER_IMAGE:-atendai/evolution-api:v2.2.3}
+    container_name: smart-kaits-evolution
+    restart: unless-stopped
+    depends_on:
+      smart-postgres:
+        condition: service_healthy
+      smart-redis:
+        condition: service_started
+    environment:
+      SERVER_URL: ${EVOLUTION_SERVER_URL:-http://127.0.0.1:8091}
+      AUTHENTICATION_API_KEY: ${EVOLUTION_AUTH_KEY:-troque-esta-chave-evolution}
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://smartuser:smartpassword@smart-postgres:5432/evolution
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://smart-redis:6379/6
+      DEL_INSTANCE: "false"
+      CONFIG_SESSION_PHONE_VERSION: ${CONFIG_SESSION_PHONE_VERSION:-}
+    ports:
+      - "${EVOLUTION_HOST_PORT:-8091}:8080"
+    networks:
+      - smart-network
+
+  smart-redis:
+    image: redis:7-alpine
+    container_name: smart-kaits-redis
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - smart-network
+
+  smart-qdrant:
+    image: qdrant/qdrant:latest
+    container_name: smart-kaits-qdrant
+    restart: always
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - smart-network
+
+  # Applications
+  ai-agent-backend:
+    build:
+      context: ./apps/ai-agent-completo/backend
+    container_name: ai-agent-backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql+asyncpg://smartuser:smartpassword@smart-postgres:5432/smartdb
+      REDIS_HOST: smart-redis
+      REDIS_PORT: 6379
+      QDRANT_HOST: smart-qdrant
+      QDRANT_PORT: 6333
+      SECRET_KEY: ${BACKEND_SECRET_KEY:-supersecret}
+      ENVIRONMENT: production
+      ALLOWED_ORIGINS: "https://aiagent.sanjaworks.com,https://smartkaits.sanjaworks.com,https://kaits.com.br,https://sistema.kaits.com.br,http://localhost:5173,http://127.0.0.1:5173"
+      EVOLUTION_API_URL: ${EVOLUTION_API_URL:-http://smart-evolution:8080}
+      EVOLUTION_API_KEY: ${EVOLUTION_AUTH_KEY:-troque-esta-chave-evolution}
+      EVOLUTION_WEBHOOK_PUBLIC_BASE: ${EVOLUTION_WEBHOOK_PUBLIC_BASE:-https://aiagent.sanjaworks.com}
+      EMBED_TRUST_SECRET: ${EMBED_TRUST_SECRET:-smart-kaits-embed-secret-2024}
+      CHATWOOT_WIDGET_URL: ${CHATWOOT_WIDGET_URL:-https://chat.techfala.com.br}
+      CHATWOOT_WEBSITE_TOKEN: ${CHATWOOT_WEBSITE_TOKEN:-ne6fK4FtzJfMCLeMffqqwq53}
+      CHATWOOT_IDENTITY_TOKEN: ${CHATWOOT_IDENTITY_TOKEN:-F6STAbJkDbYCfqwUh5TVn56E}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      tokenopenai: ${OPENAI_API_KEY:-}
+    depends_on:
+      smart-postgres:
+        condition: service_healthy
+      smart-redis:
+        condition: service_started
+      smart-qdrant:
+        condition: service_started
+      smart-evolution:
+        condition: service_started
+    networks:
+      - smart-network
+      - n8n_edge
+    volumes:
+      - ./apps/ai-agent-completo/backend:/app
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=n8n_edge"
+      - "traefik.http.routers.ai-agent-backend.rule=Host(`aiagent.sanjaworks.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.ai-agent-backend.entrypoints=websecure"
+      - "traefik.http.routers.ai-agent-backend.tls.certresolver=le"
+      - "traefik.http.services.ai-agent-backend.loadbalancer.server.port=8000"
+
+  ai-agent-frontend:
+    build:
+      context: ./apps/ai-agent-completo
+      args:
+        VITE_EMBED_ALLOWED_ORIGINS: "https://smartkaits.sanjaworks.com,https://kaits.com.br,https://sistema.kaits.com.br"
+    container_name: ai-agent-frontend
+    restart: always
+    networks:
+      - n8n_edge
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=n8n_edge"
+      - "traefik.http.routers.ai-agent-frontend.rule=Host(`aiagent.sanjaworks.com`)"
+      - "traefik.http.routers.ai-agent-frontend.entrypoints=websecure"
+      - "traefik.http.routers.ai-agent-frontend.tls.certresolver=le"
+      - "traefik.http.services.ai-agent-frontend.loadbalancer.server.port=80"
+    depends_on:
+      - ai-agent-backend
+
+  mock-kaits:
+    build:
+      context: ./apps/mock-kaits-demonstracao
+    container_name: mock-kaits
+    restart: always
+    networks:
+      - n8n_edge
+    volumes:
+      - ./apps/mock-kaits-demonstracao:/usr/share/nginx/html
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=n8n_edge"
+      - "traefik.http.routers.mock-kaits.rule=Host(`smartkaits.sanjaworks.com`)"
+      - "traefik.http.routers.mock-kaits.entrypoints=websecure"
+      - "traefik.http.routers.mock-kaits.tls.certresolver=le"
+      - "traefik.http.services.mock-kaits.loadbalancer.server.port=80"
+
+  yex-dashboard:
+    build:
+      context: ./apps/yex-dashboard
+      args:
+        CRM_API_INTERNAL_URL: http://yex-crm-api:4001
+    container_name: yex-dashboard
+    restart: always
+    ports:
+      - "0.0.0.0:3000:3000"
+    networks:
+      - n8n_edge
+      - smart-network
+      - yex_crm
+    environment:
+      - USAR_HTTP_KPI=0
+      - NEXT_PUBLIC_APP_URL=https://yex.sanjaworks.com
+      - YEX_AUTH_EMAIL=admin@yex.com.br
+      - YEX_AUTH_PASSWORD=123456
+      - YEX_COMERCIAL_EMAIL=comercial@yex.com.br
+      - YEX_COMERCIAL_PASSWORD=123456
+      - NEXT_PUBLIC_CRM_API_URL=http://195.201.91.138:4001
+      - CRM_API_INTERNAL_URL=http://yex-crm-api:4001
+    volumes:
+      - yex_dashboard_data:/app/.data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=n8n_edge"
+      - "traefik.http.routers.yex-dashboard.rule=Host(`yex.sanjaworks.com`)"
+      - "traefik.http.routers.yex-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.yex-dashboard.tls.certresolver=le"
+      - "traefik.http.services.yex-dashboard.loadbalancer.server.port=3000"
+
+  disparo-farol:
+    build:
+      context: /root/farol formulario
+    container_name: disparo-farol
+    env_file:
+      - /root/farol formulario/.env
+    environment:
+      DATABASE_URL: postgresql://smartuser:smartpassword@smart-postgres:5432/farol
+      TZ: America/Sao_Paulo
+    restart: always
+    networks:
+      - n8n_edge
+      - smart-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=n8n_edge"
+      - "traefik.http.routers.disparo-farol.rule=Host(`sdrfarol.sanjaworks.com`)"
+      - "traefik.http.routers.disparo-farol.entrypoints=websecure"
+      - "traefik.http.routers.disparo-farol.tls.certresolver=le"
+      - "traefik.http.services.disparo-farol.loadbalancer.server.port=80"
+
+networks:
+  smart-network:
+    driver: bridge
+  n8n_edge:
+    external: true
+  yex_crm:
+    external: true
+    name: yexdashboard_default
+
+volumes:
+  postgres_data:
+  redis_data:
+  qdrant_data:
+  yex_dashboard_data:

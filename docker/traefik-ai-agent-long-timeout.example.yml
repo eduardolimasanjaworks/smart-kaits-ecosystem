@@ -1,0 +1,31 @@
+# Se no Chrome aparecer «Provisional headers» em GET .../whatsapp/connect, o proxy fechou antes
+# da resposta (muito comum em 60s). Domínios tipo skagent.techkaits.com.br precisam do mesmo ajuste.
+#
+# Nginx (referência):
+#   proxy_read_timeout 120s;
+#   proxy_connect_timeout 30s;
+#   proxy_send_timeout 120s;
+#
+# Fragmento para Traefik estático (file provider) ou merge no dynamic config.
+# GET /api/v1/whatsapp/connect pode levar 30–120s (Evolution + Baileys).
+# Sem timeouts maiores, o proxy devolve 504 e o front parece “falha no QR”.
+#
+# Ajuste o nome do serviço/router ao seu setup. Exemplo com Docker provider:
+#
+#   services:
+#     ai-agent-backend:
+#       labels:
+#         - "traefik.http.services.ai-agent-backend.loadbalancer.server.port=8000"
+#         - "traefik.http.services.ai-agent-backend.loadbalancer.responseForwarding.flushInterval=1ms"
+#
+# Para timeouts de forwarding (Traefik v3), use ServersTransport:
+#
+#   http:
+#     serversTransports:
+#       ai-agent-long:
+#         forwardingTimeouts:
+#           dialTimeout: 30s
+#           responseHeaderTimeout: 120s
+#           idleConnTimeout: 90s
+#
+# Depois associe o serviço ao transport (via labels ou routers).
