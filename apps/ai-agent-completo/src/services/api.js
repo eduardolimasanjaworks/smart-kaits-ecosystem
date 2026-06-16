@@ -157,8 +157,11 @@ export const whatsappService = {
 }
 
 export const aiService = {
-  async processChat(text, history = []) {
-    const res = await api.post('/ai/chat', { text, history })
+  async processChat(text, history = [], kaitsToken = null, userIdentifier = null) {
+    const payload = { text, history }
+    if (kaitsToken) payload.kaits_token = kaitsToken
+    if (userIdentifier) payload.user_identifier = userIdentifier
+    const res = await api.post('/ai/chat', payload)
     return res.data
   },
   async teachByInstruction(text) {

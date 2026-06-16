@@ -140,7 +140,7 @@ function getGovernanceSummary(toolKey) {
                   <textarea 
                     v-if="!config.tools[tool.key + 'Instructions']"
                     placeholder="Ex: Use esta ferramenta sempre que o usuário perguntar sobre horários de turmas específicas ou sobre aulas em uma data determinada."
-                    @input="config.tools[tool.key + 'Instructions'] = ($event.target as HTMLTextAreaElement).value"
+                    @input="config.tools[tool.key + 'Instructions'] = $event.target.value"
                   ></textarea>
                   <textarea 
                     v-else
@@ -219,7 +219,7 @@ function getGovernanceSummary(toolKey) {
                     <textarea 
                       v-if="!config.tools[tool.key + 'GovernanceInstructions']"
                       placeholder="Ex: Sempre pergunte o nome completo e CPF do responsável antes de acessar dados financeiros. Nunca compartilhe dados de mais de um aluno sem a confirmação da secretaria."
-                      @input="config.tools[tool.key + 'GovernanceInstructions'] = ($event.target as HTMLTextAreaElement).value"
+                      @input="config.tools[tool.key + 'GovernanceInstructions'] = $event.target.value"
                     ></textarea>
                     <textarea 
                       v-else

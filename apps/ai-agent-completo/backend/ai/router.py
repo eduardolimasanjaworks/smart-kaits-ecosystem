@@ -23,6 +23,8 @@ router = APIRouter(prefix="/ai", tags=["Inteligência Artificial"])
 class ChatMessage(BaseModel):
     text: str
     history: Optional[List[dict]] = []
+    kaits_token: Optional[str] = None
+    user_identifier: Optional[str] = None
 
 class ChatResponse(BaseModel):
     text: str
@@ -53,7 +55,8 @@ async def chat_with_assistant(
         school_id=str(school_id),
         agent_config=agent_config_dict,
         chat_history=payload.history,
-        kaits_token=credentials.credentials if credentials else None
+        kaits_token=payload.kaits_token or (credentials.credentials if credentials else None),
+        user_identifier=payload.user_identifier
     )
     
     return ChatResponse(**result)
