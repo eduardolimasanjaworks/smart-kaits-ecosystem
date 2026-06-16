@@ -156,12 +156,41 @@ def format_kaits_response(api_result: dict) -> str:
     return "\n".join(formatted_text) if formatted_text else json.dumps(api_result, ensure_ascii=False)
 
 
+def check_tool_access(tool_key: str, user_identifier: str, agent_config: dict) -> bool:
+    """
+    Verifica DE FORMA DETERMINÍSTICA se o usuário tem permissão para usar a ferramenta.
+    Retorna True se permitido, False se bloqueado.
+    """
+    tools_config = agent_config.get("tools", {})
+    governance_mode = tools_config.get(f"{tool_key}GovernanceMode", "allow")
+    allowed_contacts = tools_config.get(f"{tool_key}AllowedContacts", [])
+    blocked_contacts = tools_config.get(f"{tool_key}BlockedContacts", [])
+
+    # Se não temos identificador do usuário, permite por padrão
+    if not user_identifier:
+        return True
+
+    if governance_mode == "allow":
+        # Modo "Apenas esses contatos"
+        allowed_list = [c.get("contact", "").strip().lower() for c in allowed_contacts if c.get("contact")]
+        if not allowed_list:
+            return True
+        return user_identifier.strip().lower() in allowed_list
+    else:
+        # Modo "Todos exceto esses"
+        blocked_list = [c.get("contact", "").strip().lower() for c in blocked_contacts if c.get("contact")]
+        if not blocked_list:
+            return True
+        return user_identifier.strip().lower() not in blocked_list
+
+
 async def process_chat_message(
     user_message: str,
     school_id: str,
     agent_config: dict,
     chat_history: list = None,
     kaits_token: str = None,
+    user_identifier: str = None,
 ) -> dict:
     """
     Controlador principal que:
@@ -173,14 +202,14 @@ async def process_chat_message(
     # 1. Recupera chunks mais relevantes (Vector Search)
     chunks = await search_knowledge(school_id, user_message, top_k=6)
     
-    # 2. Monta o super-prompt
-    sys_prompt = build_assistant_system_prompt(agent_config, facts=chunks)
+    # 2. Manda o super-prompt
+    sys_prompt = build_assistant_system_prompt(agent_config, facts=chunks, user_identifier=user_identifier)
     
     messages = [{"role": "system", "content": sys_prompt}]
     
     # Adiciona o histórico no modelo
     if chat_history:
-        for hist_msg in chat_history[-10:  # Aumenta o histórico para lembrar melhor o contexto
+        for hist_msg in chat_history[-10:]:
             role = "assistant" if hist_msg.get("from") == "ai" else "user"
             messages.append({"role": role, "content": hist_msg.get("text", "")})
             
@@ -209,11 +238,19 @@ async def process_chat_message(
 
     conf_tools = agent_config.get("tools", {})
     
+    # Mapeamento de nomes de tools para chaves de configuração
+    tool_map = {
+        "consultClasses": "consultClasses",
+        "checkFinancial": "checkFinancial",
+        "searchStudent": "searchStudent",
+        "enrollStudent": "enrollStudent"
+    }
+    
     if conf_tools.get("consultClasses"):
         tools.append({
             "type": "function",
             "function": {
-                "name": "consult_classes",
+                "name": "consultClasses",
                 "description": "Consulta turmas, cursos e aulas da escola. Use sempre que o usuário perguntar sobre horários, turmas, calendário escolar. SEMPRE peça mais detalhes se a busca for muito genérica.",
                 "parameters": {
                     "type": "object",
@@ -237,7 +274,7 @@ async def process_chat_message(
         tools.append({
             "type": "function",
             "function": {
-                "name": "check_financial",
+                "name": "checkFinancial",
                 "description": "Consulta valores de turmas e financeiro. Use quando o usuário perguntar sobre mensalidades, valores, taxas de matrícula.",
                 "parameters": {
                     "type": "object",
@@ -254,8 +291,8 @@ async def process_chat_message(
         tools.append({
             "type": "function",
             "function": {
-                "name": "search_student",
                 "description": "Busca dados de alunos cadastrados. Use quando o usuário perguntar sobre alunos por nome, CPF, e-mail ou matrícula. SEMPRE peça pelo menos um filtro (nome, CPF ou matrícula) para evitar retornar muitos resultados.",
+                "name": "searchStudent",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -274,7 +311,7 @@ async def process_chat_message(
         tools.append({
             "type": "function",
             "function": {
-                "name": "start_enrollment",
+                "name": "enrollStudent",
                 "description": "Inicia o processo de pré-matrícula de um novo aluno.",
                 "parameters": {
                     "type": "object",
@@ -321,8 +358,22 @@ async def process_chat_message(
                     }
                 }
             
-            elif t_name == "consult_classes":
+            # Verificação DETERMINÍSTICA de acesso antes de qualquer ferramenta KAITS
+            if t_name in tool_map:
+                tool_key = tool_map[t_name]
+                if not check_tool_access(tool_key, user_identifier, agent_config):
+                    return {
+                        "text": "Desculpe, você não tem permissão para usar esta funcionalidade. Por favor, entre em contato com a secretaria para mais informações.",
+                        "audit": {
+                            "type": "tool",
+                            "headline": "Acesso negado",
+                            "detail": f"Usuário não tem permissão para usar {t_name}"
+                        }
+                    }
+            
+            if t_name == "consultClasses":
                 api_result = {}
+                needs_more_info = False
                 
                 if token_to_use:
                     limite = args.get("limite", MAX_RESULTS_DEFAULT)
@@ -368,7 +419,7 @@ async def process_chat_message(
                     else:
                         formatted_text = format_kaits_response(api_result)
                         return {
-                            "text": f"Consultei o sistema KAITS: \n{formatted_text}",
+                            "text": f"Consultei o sistema KAITS:\n{formatted_text}",
                             "audit": {"type": "tool", "headline": "Consultou turmas/grade via KAITS API", "detail": args}
                         }
                 else:
@@ -377,7 +428,7 @@ async def process_chat_message(
                         "audit": {"type": "tool", "headline": "Erro ao consultar KAITS API", "detail": args}
                     }
             
-            elif t_name == "check_financial":
+            if t_name == "checkFinancial":
                 api_result = None
                 if token_to_use:
                     api_result = await call_kaits_api(
@@ -395,7 +446,7 @@ async def process_chat_message(
                 if api_result:
                     formatted_text = format_kaits_response({"valores": api_result})
                     return {
-                        "text": f"Consultei o sistema KAITS: \n{formatted_text}",
+                        "text": f"Consultei o sistema KAITS:\n{formatted_text}",
                         "audit": {"type": "tool", "headline": "Consultou financeiro via KAITS API", "detail": args}
                     }
                 else:
@@ -404,8 +455,9 @@ async def process_chat_message(
                         "audit": {"type": "tool", "headline": "Erro ao consultar KAITS API", "detail": args}
                     }
             
-            elif t_name == "search_student":
+            if t_name == "searchStudent":
                 api_result = None
+                needs_more_info = False
                 
                 # Verifica se tem pelo menos um filtro
                 has_filter = any([
@@ -446,7 +498,7 @@ async def process_chat_message(
                     else:
                         formatted_text = format_kaits_response({"alunos": api_result})
                         return {
-                            "text": f"Consultei o sistema KAITS: \n{formatted_text}",
+                            "text": f"Consultei o sistema KAITS:\n{formatted_text}",
                             "audit": {"type": "tool", "headline": "Buscou aluno via KAITS API", "detail": args}
                         }
                 else:
@@ -455,7 +507,7 @@ async def process_chat_message(
                         "audit": {"type": "tool", "headline": "Erro ao consultar KAITS API", "detail": args}
                     }
             
-            elif t_name == "start_enrollment":
+            if t_name == "enrollStudent":
                 return {
                     "text": f"Que maravilha! Iniciei a pré-matrícula de {args.get('nome_aluno')} para a série {args.get('serie')} direto no sistema. Em breve nossa secretaria entrará em contato para os próximos passos.",
                     "audit": {"type": "tool", "headline": "Iniciou pré-matrícula", "detail": args}
@@ -472,10 +524,10 @@ async def process_chat_message(
             "page": used_chunk.get("page", 1),
             "lineStart": used_chunk.get("line_start"),
             "lineEnd": used_chunk.get("line_end"),
-            "chunk": used_chunk.get("text")[:150] + "...",
+            "chunk": used_chunk.get("text", "")[:150] + "...",
             "source": used_chunk.get("text"),
             "headline": "Encontrei base no contexto",
-            "detail": f"Usado {used_chunk.get('source_ref')}"
+            "detail": f"Usou {used_chunk.get('source_ref')}"
         }
     else:
         audit = {
