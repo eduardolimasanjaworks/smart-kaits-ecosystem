@@ -1,5 +1,5 @@
 """
-ai/assistant.py — Ponto de Entrada da Conversa
+ai/assistant.py - Ponto de Entrada da Conversa
 
 Atende requisições do frontend, roda o RAG (se precisar), monta o System Prompt,
 e aciona a OpenAI.
@@ -17,48 +17,43 @@ KAITS_BASE_URL = "https://api.kaits.com.br"
 
 async def call_kaits_api(
     kaits_token: str,
+    endpoint: str,
     action: str,
-    param: dict = None,
-    idTurma: str = None,
-    filtro: dict = None
+    params: dict = None,
 ) -> dict:
     """
     Helper function to call KAITS API endpoints.
+    
+    Args:
+        kaits_token: The KAITS API token
+        endpoint: The endpoint to call (e.g., "alunos", "aulas", "cursos")
+        action: The action to perform (e.g., "alunos", "turmas", "valores")
+        params: Additional parameters for the request
+    
+    Returns:
+        The API response
     """
-    headers = {
-        "Content-Type": "application/json"
-    }
+    url = f"{KAITS_BASE_URL}/{endpoint}/"
     payload = {
         "token": kaits_token,
         "acao": action
     }
-    if param is not None:
-        payload["param"] = param
-    if idTurma is not None:
-        payload["idTurma"] = idTurma
-    if filtro is not None:
-        payload["filtro"] = filtro
-
+    
+    if params:
+        payload.update(params)
+    
     try:
         async with httpx.AsyncClient() as client:
-            if action == "ia":
-                response = await client.post(
-                    f"{KAITS_BASE_URL}/ia/",
-                    headers=headers,
-                    json=payload,
-                    timeout=30.0
-                )
-            else:
-                response = await client.post(
-                    KAITS_BASE_URL,
-                    headers=headers,
-                    json=payload,
-                    timeout=30.0
-                )
+            response = await client.post(
+                url,
+                headers={"Content-Type": "application/json"},
+                json=payload,
+                timeout=30.0
+            )
             response.raise_for_status()
             return response.json()
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        return {"sucesso": "0", "msg": str(e)}
 
 
 async def process_chat_message(
@@ -66,7 +61,7 @@ async def process_chat_message(
     school_id: str,
     agent_config: dict,
     chat_history: list = None,
-    kaits_token: str = None
+    kaits_token: str = None,
 ) -> dict:
     """
     Controlador principal que:
@@ -119,15 +114,16 @@ async def process_chat_message(
             "type": "function",
             "function": {
                 "name": "consult_classes",
-                "description": "Consulta a grade escolar, turmas disponíveis e aulas. Use sempre que o usuário perguntar sobre horários, turmas, aulas, calendário escolar.",
+                "description": "Consulta turmas, cursos e aulas da escola. Use sempre que o usuário perguntar sobre horários, turmas, calendário escolar.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "idTurma": {"type": "string", "description": "ID da turma, se conhecido."},
-                        "idAula": {"type": "string", "description": "ID da aula, se conhecido."},
-                        "data_inicial": {"type": "string", "description": "Data inicial (formato: AAAA-MM-DD) para filtrar aulas."},
-                        "data_final": {"type": "string", "description": "Data final (formato: AAAA-MM-DD) para filtrar aulas."},
-                        "incluir_turmas": {"type": "boolean", "description": "Se deve buscar a lista de turmas disponíveis (padrão: true)."}
+                        "idTurm": {"type": "string", "description": "ID da turma, se conhecido"},
+                        "idCurs": {"type": "string", "description": "ID do curso, se conhecido"},
+                        "idEst": {"type": "string", "description": "ID do estágio, se conhecido"},
+                        "todasTurmas": {"type": "boolean", "description": "Buscar todas as turmas disponíveis"},
+                        "todosCursos": {"type": "boolean", "description": "Buscar todos os cursos disponíveis"},
+                        "todosEstagios": {"type": "boolean", "description": "Buscar todos os estágios disponíveis"}
                     }
                 }
             }
@@ -137,13 +133,13 @@ async def process_chat_message(
         tools.append({
             "type": "function",
             "function": {
-                "name": "check_financial_status",
-                "description": "Verifica pendências financeiras, boletos ou valores de turmas. Use quando o usuário perguntar sobre mensalidades, valores, pendências, boletos.",
+                "name": "check_financial",
+                "description": "Consulta valores de turmas e financeiro. Use quando o usuário perguntar sobre mensalidades, valores, taxas de matrícula.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "cpf": {"type": "string", "description": "CPF do aluno ou responsável, para consultar pendências."},
-                        "idTurma": {"type": "string", "description": "ID da turma para consultar valores e taxas de matrícula."}
+                        "idTurm": {"type": "string", "description": "ID da turma para consultar valores"},
+                        "soMatric": {"type": "boolean", "description": "Mostrar apenas valores de matrícula"}
                     }
                 }
             }
@@ -154,14 +150,15 @@ async def process_chat_message(
             "type": "function",
             "function": {
                 "name": "search_student",
-                "description": "Busca dados de alunos, responsáveis ou usuários cadastrados. Use quando o usuário perguntar sobre dados de uma pessoa (nome, CPF, e-mail, telefone).",
+                "description": "Busca dados de alunos cadastrados. Use quando o usuário perguntar sobre alunos por nome, CPF, e-mail ou matrícula.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "nome": {"type": "string", "description": "Nome (ou parte do nome) do usuário para busca."},
-                        "cpf": {"type": "string", "description": "CPF do usuário para busca."},
-                        "email": {"type": "string", "description": "E-mail do usuário para busca."},
-                        "telefone": {"type": "string", "description": "Telefone do usuário para busca."}
+                        "nome": {"type": "string", "description": "Nome ou parte do nome do aluno"},
+                        "CPF": {"type": "string", "description": "CPF do aluno"},
+                        "email": {"type": "string", "description": "E-mail do aluno"},
+                        "numMatric": {"type": "string", "description": "Número da matrícula do aluno"},
+                        "RG": {"type": "string", "description": "RG do aluno"}
                     }
                 }
             }
@@ -176,10 +173,9 @@ async def process_chat_message(
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "nome_aluno": {"type": "string", "description": "Nome completo do aluno."},
-                        "serie": {"type": "string", "description": "Série ou turma desejada."},
-                        "idTurma": {"type": "string", "description": "ID da turma, se já selecionada."},
-                        "nome_responsavel": {"type": "string", "description": "Nome do responsável (se aplicável)."}
+                        "nome_aluno": {"type": "string", "description": "Nome completo do aluno"},
+                        "serie": {"type": "string", "description": "Série ou turma desejada"},
+                        "idTurm": {"type": "string", "description": "ID da turma, se já selecionada"}
                     },
                     "required": ["nome_aluno", "serie"]
                 }
@@ -220,38 +216,25 @@ async def process_chat_message(
                 }
             
             elif t_name == "consult_classes":
-                api_result = None
+                api_result = {}
                 if token_to_use:
-                    # Primeiro busca turmas, se necessário
-                    turmas_result = None
-                    if args.get("incluir_turmas", True):
-                        turmas_result = await call_kaits_api(
+                    # Busca cursos, estágios e turmas conforme necessidade
+                    if args.get("todasTurmas") or args.get("todosCursos") or args.get("todosEstagios"):
+                        tudosepara = await call_kaits_api(
                             token_to_use,
-                            action="turmas"
+                            endpoint="cursos",
+                            action="tudosepara"
                         )
+                        api_result["tudosepara"] = tudosepara
                     
-                    # Depois busca aulas com os parâmetros fornecidos
-                    param = {}
-                    if args.get("idAula"):
-                        param["idAula"] = args["idAula"]
-                    if args.get("data_inicial"):
-                        param["desdeData"] = args["data_inicial"]
-                    if args.get("data_final"):
-                        param["ateData"] = args["data_final"]
-                    if args.get("idTurma"):
-                        param["idTurma"] = args["idTurma"]
-                    
-                    aulas_result = await call_kaits_api(
-                        token_to_use,
-                        action="alunosAula",
-                        param=param
-                    )
-                    
-                    api_result = {}
-                    if turmas_result:
-                        api_result["turmas"] = turmas_result
-                    if aulas_result:
-                        api_result["aulas"] = aulas_result
+                    if args.get("idTurm"):
+                        aulas_turma = await call_kaits_api(
+                            token_to_use,
+                            endpoint="aulas",
+                            action="aulasTurma",
+                            params={"idTurm": args["idTurm"]}
+                        )
+                        api_result["aulasTurma"] = aulas_turma
                 
                 if api_result:
                     return {
@@ -264,23 +247,15 @@ async def process_chat_message(
                         "audit": {"type": "tool", "headline": "Erro ao consultar KAITS API", "detail": args}
                     }
             
-            elif t_name == "check_financial_status":
+            elif t_name == "check_financial":
                 api_result = None
                 if token_to_use:
-                    if args.get("idTurma"):
-                        valores_result = await call_kaits_api(
-                            token_to_use,
-                            action="valores",
-                            idTurma=args["idTurma"]
-                        )
-                        api_result = valores_result
-                    elif args.get("cpf"):
-                        dados_result = await call_kaits_api(
-                            token_to_use,
-                            action="dadosQuem",
-                            filtro={"cpf": args["cpf"]}
-                        )
-                        api_result = dados_result
+                    api_result = await call_kaits_api(
+                        token_to_use,
+                        endpoint="cursos",
+                        action="valores",
+                        params=args
+                    )
                 
                 if api_result:
                     return {
@@ -296,20 +271,11 @@ async def process_chat_message(
             elif t_name == "search_student":
                 api_result = None
                 if token_to_use:
-                    filtro = {}
-                    if args.get("nome"):
-                        filtro["nome"] = args["nome"]
-                    if args.get("cpf"):
-                        filtro["cpf"] = args["cpf"]
-                    if args.get("email"):
-                        filtro["email"] = args["email"]
-                    if args.get("telefone"):
-                        filtro["telefone"] = args["telefone"]
-                    
                     api_result = await call_kaits_api(
                         token_to_use,
-                        action="dadosQuem",
-                        filtro=filtro
+                        endpoint="alunos",
+                        action="alunos",
+                        params=args
                     )
                 
                 if api_result:
