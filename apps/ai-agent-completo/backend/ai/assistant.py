@@ -13,6 +13,8 @@ from ai.retriever import search_knowledge
 from ai.prompt_builder import build_assistant_system_prompt
 
 KAITS_BASE_URL = "https://api.kaits.com.br"
+MAX_RESULTS_DEFAULT = 10  # Limite padrão de resultados
+MAX_JSON_LENGTH = 5000    # Limite de caracteres para a resposta JSON
 
 
 async def call_kaits_api(
@@ -114,7 +116,7 @@ async def process_chat_message(
             "type": "function",
             "function": {
                 "name": "consult_classes",
-                "description": "Consulta turmas, cursos e aulas da escola. Use sempre que o usuário perguntar sobre horários, turmas, calendário escolar.",
+                "description": "Consulta turmas, cursos e aulas da escola. Use sempre que o usuário perguntar sobre horários, turmas, calendário escolar. SEMPRE peça mais detalhes se a busca for muito genérica.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -123,7 +125,8 @@ async def process_chat_message(
                         "idEst": {"type": "string", "description": "ID do estágio, se conhecido"},
                         "todasTurmas": {"type": "boolean", "description": "Buscar todas as turmas disponíveis"},
                         "todosCursos": {"type": "boolean", "description": "Buscar todos os cursos disponíveis"},
-                        "todosEstagios": {"type": "boolean", "description": "Buscar todos os estágios disponíveis"}
+                        "todosEstagios": {"type": "boolean", "description": "Buscar todos os estágios disponíveis"},
+                        "limite": {"type": "integer", "description": f"Limite de resultados (padrão: {MAX_RESULTS_DEFAULT})"}
                     }
                 }
             }
@@ -150,7 +153,7 @@ async def process_chat_message(
             "type": "function",
             "function": {
                 "name": "search_student",
-                "description": "Busca dados de alunos cadastrados. Use quando o usuário perguntar sobre alunos por nome, CPF, e-mail ou matrícula.",
+                "description": "Busca dados de alunos cadastrados. Use quando o usuário perguntar sobre alunos por nome, CPF, e-mail ou matrícula. SEMPRE peça pelo menos um filtro (nome, CPF ou matrícula) para evitar retornar muitos resultados.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -158,7 +161,8 @@ async def process_chat_message(
                         "CPF": {"type": "string", "description": "CPF do aluno"},
                         "email": {"type": "string", "description": "E-mail do aluno"},
                         "numMatric": {"type": "string", "description": "Número da matrícula do aluno"},
-                        "RG": {"type": "string", "description": "RG do aluno"}
+                        "RG": {"type": "string", "description": "RG do aluno"},
+                        "limite": {"type": "integer", "description": f"Limite de resultados (padrão: {MAX_RESULTS_DEFAULT})"}
                     }
                 }
             }
@@ -217,8 +221,12 @@ async def process_chat_message(
             
             elif t_name == "consult_classes":
                 api_result = {}
+                needs_more_info = False
+                
                 if token_to_use:
-                    # Busca cursos, estágios e turmas conforme necessidade
+                    limite = args.get("limite", MAX_RESULTS_DEFAULT)
+                    
+                    # Verifica se a busca é muito genérica
                     if args.get("todasTurmas") or args.get("todosCursos") or args.get("todosEstagios"):
                         tudosepara = await call_kaits_api(
                             token_to_use,
@@ -226,6 +234,11 @@ async def process_chat_message(
                             action="tudosepara"
                         )
                         api_result["tudosepara"] = tudosepara
+                        
+                        # Verifica se a resposta é muito longa
+                        json_length = len(json.dumps(api_result, ensure_ascii=False))
+                        if json_length > MAX_JSON_LENGTH:
+                            needs_more_info = True
                     
                     if args.get("idTurm"):
                         aulas_turma = await call_kaits_api(
@@ -236,7 +249,12 @@ async def process_chat_message(
                         )
                         api_result["aulasTurma"] = aulas_turma
                 
-                if api_result:
+                if needs_more_info:
+                    return {
+                        "text": "Encontrei muitos resultados! Para poder te ajudar melhor, poderia me dizer: \n1. Qual curso você tem interesse? \n2. Ou qual turma? \n3. Ou se você quer aulas de um dia específico?",
+                        "audit": {"type": "tool", "headline": "Pedir mais informações para filtrar", "detail": args}
+                    }
+                elif api_result:
                     return {
                         "text": f"Consultei o sistema KAITS e encontrei: {json.dumps(api_result, ensure_ascii=False)}",
                         "audit": {"type": "tool", "headline": "Consultou turmas/grade via KAITS API", "detail": args}
@@ -270,15 +288,42 @@ async def process_chat_message(
             
             elif t_name == "search_student":
                 api_result = None
+                needs_more_info = False
+                
+                # Verifica se tem pelo menos um filtro
+                has_filter = any([
+                    args.get("nome"), 
+                    args.get("CPF"), 
+                    args.get("email"), 
+                    args.get("numMatric"), 
+                    args.get("RG")
+                ])
+                
+                if not has_filter:
+                    return {
+                        "text": "Para poder buscar o aluno, preciso de pelo menos uma informação: nome, CPF, e-mail ou número da matrícula. Qual você tem?",
+                        "audit": {"type": "tool", "headline": "Pedir filtro para busca de aluno", "detail": args}
+                    }
+                
                 if token_to_use:
+                    limite = args.get("limite", MAX_RESULTS_DEFAULT)
                     api_result = await call_kaits_api(
                         token_to_use,
                         endpoint="alunos",
                         action="alunos",
                         params=args
                     )
+                    
+                    # Verifica se a resposta é muito longa
+                    if api_result and len(json.dumps(api_result, ensure_ascii=False)) > MAX_JSON_LENGTH:
+                        needs_more_info = True
                 
-                if api_result:
+                if needs_more_info:
+                    return {
+                        "text": "Encontrei muitos alunos! Poderia me dar mais detalhes, como o nome completo ou a turma?",
+                        "audit": {"type": "tool", "headline": "Pedir mais informações para filtrar alunos", "detail": args}
+                    }
+                elif api_result:
                     return {
                         "text": f"Consultei o sistema KAITS e encontrei: {json.dumps(api_result, ensure_ascii=False)}",
                         "audit": {"type": "tool", "headline": "Buscou aluno via KAITS API", "detail": args}
