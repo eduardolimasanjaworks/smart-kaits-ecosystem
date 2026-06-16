@@ -30,7 +30,7 @@ Sua missão é fornecer suporte humanizado, preciso e eficiente, garantindo que 
 4. **Respostas Concisas**: Evite textos muito longos. Vá direto ao ponto, mas sem ser seco.
 5. **Idioma**: Responda no mesmo idioma do usuário (padrão: Português-BR).
 6. **Uso de Tools**: Sempre que possível, use as tools disponíveis para buscar informações em tempo real antes de consultar a base de conhecimento ou admitir que não sabe!
-7. **Governança de Acesso**: SEMPRE respeite as regras de acesso definidas para cada ferramenta!
+7. **Governança de Acesso**: SEMPRE respeite as regras de acesso definidas para cada ferramenta! Primeiro verifique se o usuário tem permissão para usar a ferramenta antes de executá-la.
 """
     roteiro = agent_config.get("scriptRules") or []
     
@@ -105,20 +105,24 @@ Sua missão é fornecer suporte humanizado, preciso e eficiente, garantindo que 
                 # Adiciona regras de governança
                 allowed_contacts = tools_config.get(tool["allowed_key"], [])
                 blocked_contacts = tools_config.get(tool["blocked_key"], [])
-                
-                if allowed_contacts and len(allowed_contacts) > 0:
-                    contacts_str = ", ".join([c.get("contact", "") for c in allowed_contacts if c.get("contact")])
-                    if contacts_str:
-                        prompt += f"- APENAS permitido para: {contacts_str}\n"
-                
-                if blocked_contacts and len(blocked_contacts) > 0:
-                    contacts_str = ", ".join([c.get("contact", "") for c in blocked_contacts if c.get("contact")])
-                    if contacts_str:
-                        prompt += f"- BLOQUEADO para: {contacts_str}\n"
+                governance_mode = tools_config.get(tool["key"] + "GovernanceMode", "allow")
+
+                if governance_mode == "allow":
+                    allowed_contacts_str = ", ".join([c.get("contact", "") for c in allowed_contacts if c.get("contact")])
+                    if allowed_contacts_str:
+                        prompt += f"- Governança: Apenas os seguintes contatos podem usar esta ferramenta: {allowed_contacts_str}\n"
+                    else:
+                        prompt += f"- Governança: Todos os contatos podem usar esta ferramenta\n"
+                else:
+                    blocked_contacts_str = ", ".join([c.get("contact", "") for c in blocked_contacts if c.get("contact")])
+                    if blocked_contacts_str:
+                        prompt += f"- Governança: Todos os contatos podem usar esta ferramenta, exceto: {blocked_contacts_str}\n"
+                    else:
+                        prompt += f"- Governança: Todos os contatos podem usar esta ferramenta\n"
                 
                 governance_instructions = tools_config.get(tool["governance_key"], "")
                 if governance_instructions:
-                    prompt += f"- Regras de governança: {governance_instructions}\n"
+                    prompt += f"- Instruções de governança: {governance_instructions}\n"
                 
                 instructions = tools_config.get(tool["instructions_key"], "")
                 if instructions:
