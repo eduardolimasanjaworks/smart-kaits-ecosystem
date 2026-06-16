@@ -83,7 +83,7 @@ async def process_chat_message(
     
     messages = [{"role": "system", "content": sys_prompt}]
     
-    # Adicionar o histórico no modelo
+    # Adiciona o histórico no modelo
     if chat_history:
         for hist_msg in chat_history[-6:]:  # Limita as últimas 6
             role = "assistant" if hist_msg.get("from") == "ai" else "user"
@@ -100,7 +100,7 @@ async def process_chat_message(
         "type": "function",
         "function": {
             "name": "trigger_handover",
-            "description": "Acione isso apenas caso o usuário peça para falar com um atendente humano ou você não possuir informações de contexto suficientes para responder nada de forma útil.",
+            "description": "Acione isso apenas caso o usuário pedir para falar com um atendente humano ou você não possuir informações suficientes para responder.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -119,15 +119,15 @@ async def process_chat_message(
             "type": "function",
             "function": {
                 "name": "consult_classes",
-                "description": "Consulta a grade escolar, turmas, ou aulas.",
+                "description": "Consulta a grade escolar, turmas disponíveis e aulas. Use sempre que o usuário perguntar sobre horários, turmas, aulas, calendário escolar.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "idTurma": {"type": "string", "description": "ID da turma, se conhecido"},
-                        "idAula": {"type": "string", "description": "ID da aula, se conhecido"},
-                        "turma_nome": {"type": "string", "description": "Nome da turma, se ID não for conhecido"},
-                        "data_inicial": {"type": "string", "description": "Data inicial (AAAA-MM-DD)"},
-                        "data_final": {"type": "string", "description": "Data final (AAAA-MM-DD)"},
+                        "idTurma": {"type": "string", "description": "ID da turma, se conhecido."},
+                        "idAula": {"type": "string", "description": "ID da aula, se conhecido."},
+                        "data_inicial": {"type": "string", "description": "Data inicial (formato: AAAA-MM-DD) para filtrar aulas."},
+                        "data_final": {"type": "string", "description": "Data final (formato: AAAA-MM-DD) para filtrar aulas."},
+                        "incluir_turmas": {"type": "boolean", "description": "Se deve buscar a lista de turmas disponíveis (padrão: true)."}
                     }
                 }
             }
@@ -138,12 +138,30 @@ async def process_chat_message(
             "type": "function",
             "function": {
                 "name": "check_financial_status",
-                "description": "Verifica pendências financeiras, boletos ou valores de turmas.",
+                "description": "Verifica pendências financeiras, boletos ou valores de turmas. Use quando o usuário perguntar sobre mensalidades, valores, pendências, boletos.",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "cpf": {"type": "string", "description": "CPF do aluno ou responsável"},
-                        "idTurma": {"type": "string", "description": "ID da turma para consultar valores"},
+                        "cpf": {"type": "string", "description": "CPF do aluno ou responsável, para consultar pendências."},
+                        "idTurma": {"type": "string", "description": "ID da turma para consultar valores e taxas de matrícula."}
+                    }
+                }
+            }
+        })
+
+    if conf_tools.get("searchStudent"):
+        tools.append({
+            "type": "function",
+            "function": {
+                "name": "search_student",
+                "description": "Busca dados de alunos, responsáveis ou usuários cadastrados. Use quando o usuário perguntar sobre dados de uma pessoa (nome, CPF, e-mail, telefone).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "nome": {"type": "string", "description": "Nome (ou parte do nome) do usuário para busca."},
+                        "cpf": {"type": "string", "description": "CPF do usuário para busca."},
+                        "email": {"type": "string", "description": "E-mail do usuário para busca."},
+                        "telefone": {"type": "string", "description": "Telefone do usuário para busca."}
                     }
                 }
             }
@@ -158,10 +176,12 @@ async def process_chat_message(
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "nome_aluno": {"type": "string"},
-                        "serie": {"type": "string"},
-                        "idTurma": {"type": "string", "description": "ID da turma desejada"},
-                    }
+                        "nome_aluno": {"type": "string", "description": "Nome completo do aluno."},
+                        "serie": {"type": "string", "description": "Série ou turma desejada."},
+                        "idTurma": {"type": "string", "description": "ID da turma, se já selecionada."},
+                        "nome_responsavel": {"type": "string", "description": "Nome do responsável (se aplicável)."}
+                    },
+                    "required": ["nome_aluno", "serie"]
                 }
             }
         })
@@ -202,13 +222,15 @@ async def process_chat_message(
             elif t_name == "consult_classes":
                 api_result = None
                 if token_to_use:
-                    # First try to get list of turmas
-                    turmas_result = await call_kaits_api(
-                        token_to_use,
-                        action="turmas"
-                    )
+                    # Primeiro busca turmas, se necessário
+                    turmas_result = None
+                    if args.get("incluir_turmas", True):
+                        turmas_result = await call_kaits_api(
+                            token_to_use,
+                            action="turmas"
+                        )
                     
-                    # Then try to get alunos por aula or turmas
+                    # Depois busca aulas com os parâmetros fornecidos
                     param = {}
                     if args.get("idAula"):
                         param["idAula"] = args["idAula"]
@@ -218,15 +240,18 @@ async def process_chat_message(
                         param["ateData"] = args["data_final"]
                     if args.get("idTurma"):
                         param["idTurma"] = args["idTurma"]
+                    
                     aulas_result = await call_kaits_api(
                         token_to_use,
                         action="alunosAula",
                         param=param
                     )
-                    api_result = {
-                        "turmas": turmas_result,
-                        "aulas": aulas_result
-                    }
+                    
+                    api_result = {}
+                    if turmas_result:
+                        api_result["turmas"] = turmas_result
+                    if aulas_result:
+                        api_result["aulas"] = aulas_result
                 
                 if api_result:
                     return {
@@ -268,10 +293,40 @@ async def process_chat_message(
                         "audit": {"type": "tool", "headline": "Erro ao consultar KAITS API", "detail": args}
                     }
             
+            elif t_name == "search_student":
+                api_result = None
+                if token_to_use:
+                    filtro = {}
+                    if args.get("nome"):
+                        filtro["nome"] = args["nome"]
+                    if args.get("cpf"):
+                        filtro["cpf"] = args["cpf"]
+                    if args.get("email"):
+                        filtro["email"] = args["email"]
+                    if args.get("telefone"):
+                        filtro["telefone"] = args["telefone"]
+                    
+                    api_result = await call_kaits_api(
+                        token_to_use,
+                        action="dadosQuem",
+                        filtro=filtro
+                    )
+                
+                if api_result:
+                    return {
+                        "text": f"Consultei o sistema KAITS e encontrei: {json.dumps(api_result, ensure_ascii=False)}",
+                        "audit": {"type": "tool", "headline": "Buscou aluno via KAITS API", "detail": args}
+                    }
+                else:
+                    return {
+                        "text": "Tentei consultar o sistema, mas não consegui acessar a API no momento. Deseja que eu fale com a secretaria?",
+                        "audit": {"type": "tool", "headline": "Erro ao consultar KAITS API", "detail": args}
+                    }
+            
             elif t_name == "start_enrollment":
                 return {
                     "text": f"Que maravilha! Iniciei a pré-matrícula de {args.get('nome_aluno')} para a série {args.get('serie')} direto no sistema. Em breve nossa secretaria entrará em contato para os próximos passos.",
-                    "audit": {"type": "tool", "headline": "Iniciou pré-matrícula (simulado)", "detail": args}
+                    "audit": {"type": "tool", "headline": "Iniciou pré-matrícula", "detail": args}
                 }
 
     # Resposta Convencional (IA falou sozinha sem tool)
