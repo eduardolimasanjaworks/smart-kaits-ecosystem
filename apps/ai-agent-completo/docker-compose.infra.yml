@@ -1,0 +1,65 @@
+services:
+  # ── Banco de Dados Relacional (PostgreSQL) ───────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: kaits_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
+
+  # ── Evolution API (WhatsApp) — v2 ───────────────────────
+  # Porta no host: EVOLUTION_HOST_PORT (padrão 8090). Painel Manager (UI): http://SEU_IP:8090/manager
+  # API/Swagger costuma estar na mesma origem (ex. /docs). Depois do up: EVOLUTION_API_URL=http://localhost:8090
+  # e EVOLUTION_API_KEY = AUTHENTICATION_API_KEY abaixo. SERVER_URL = URL pública onde a Evolution é alcançável.
+  evolution-api:
+    image: atendai/evolution-api:v2.2.3
+    container_name: kaits_evolution
+    restart: unless-stopped
+    ports:
+      # Host 8090 se 8080 já estiver ocupado no servidor
+      - "${EVOLUTION_HOST_PORT:-8090}:8080"
+    environment:
+      SERVER_URL: ${EVOLUTION_SERVER_URL:-http://localhost:8090}
+      AUTHENTICATION_API_KEY: ${EVOLUTION_AUTH_KEY:-troque-esta-chave}
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://postgres:postgres@postgres:5432/evolution
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://redis:6379/6
+      DEL_INSTANCE: "false"
+    depends_on:
+      - postgres
+      - redis
+
+  # ── Banco de Dados Vetorial (Qdrant) ─────────────────────
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: kaits_qdrant
+    restart: always
+    ports:
+      - "${QDRANT_HOST_HTTP:-6335}:6333"
+      - "${QDRANT_HOST_GRPC:-6336}:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  # ── Cache & Pub/Sub (Redis) ──────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: kaits_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  redis_data:

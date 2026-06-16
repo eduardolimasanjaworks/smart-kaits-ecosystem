@@ -1,0 +1,46 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Backend
+.venv
+venv
+env
+__pycache__/
+*.pyc
+.env
+.openai.env
+*.db
+*.sqlite3
+
+# Docker
+.docker
+docker-compose.override.yml
+
+# Segredos / artefatos locais
+evolution.env
+openai.env
+logs_Da_conversa.txt
+backend/Untitled
+backend/uploads/

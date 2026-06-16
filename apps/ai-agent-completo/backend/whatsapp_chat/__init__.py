@@ -1,0 +1,1 @@
+"""Histórico WhatsApp por contacto."""
