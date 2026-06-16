@@ -1,6 +1,6 @@
 <script setup>
 /**
- * cards/ToolsCard.vue v4 — Interface melhorada para configuração de tools KAITS
+ * cards/ToolsCard.vue v5 — Interface melhorada com governança de acesso
  */
 const props = defineProps({ config: Object })
 
@@ -39,6 +39,8 @@ const toolDefs = [
 const assistantName = () => props.config.assistantName || 'a I.A.'
 
 let nextTriggerId = 200
+let nextAllowedId = 300
+let nextBlockedId = 400
 
 function addTrigger(triggersKey) {
   if (!props.config.tools[triggersKey]) props.config.tools[triggersKey] = []
@@ -49,6 +51,32 @@ function removeTrigger(triggersKey, id) {
   const arr = props.config.tools[triggersKey]
   if (!arr) return
   props.config.tools[triggersKey] = arr.filter(t => t.id !== id)
+}
+
+function addAllowedContact(toolKey) {
+  const key = toolKey + 'AllowedContacts'
+  if (!props.config.tools[key]) props.config.tools[key] = []
+  props.config.tools[key].push({ id: nextAllowedId++, contact: '' })
+}
+
+function removeAllowedContact(toolKey, id) {
+  const key = toolKey + 'AllowedContacts'
+  const arr = props.config.tools[key]
+  if (!arr) return
+  props.config.tools[key] = arr.filter(t => t.id !== id)
+}
+
+function addBlockedContact(toolKey) {
+  const key = toolKey + 'BlockedContacts'
+  if (!props.config.tools[key]) props.config.tools[key] = []
+  props.config.tools[key].push({ id: nextBlockedId++, contact: '' })
+}
+
+function removeBlockedContact(toolKey, id) {
+  const key = toolKey + 'BlockedContacts'
+  const arr = props.config.tools[key]
+  if (!arr) return
+  props.config.tools[key] = arr.filter(t => t.id !== id)
 }
 </script>
 
@@ -93,6 +121,72 @@ function removeTrigger(triggersKey, id) {
 
             <div class="tool-item__divider" />
 
+            <!-- Governança de acesso -->
+            <div class="governance-section">
+              <p class="triggers-section__title">🔒 Governança de acesso:</p>
+              
+              <!-- Permitidos -->
+              <div class="governance-block">
+                <p class="governance-subtitle">Apenas estes contatos podem usar:</p>
+                <div v-for="(item, idx) in (config.tools[tool.key + 'AllowedContacts'] || [])"
+                     :key="item.id"
+                     class="governance-row">
+                  <span class="badge-count">{{ idx + 1 }}</span>
+                  <input type="text" v-model="item.contact" placeholder="E-mail, CPF ou identificador do contato" class="input-governance">
+                  <button class="btn-icon" @click="removeAllowedContact(tool.key, item.id)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+                <button class="btn btn-add trigger-add" @click="addAllowedContact(tool.key)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  Adicionar contato permitido
+                </button>
+                <p class="governance-note">Deixe vazio para permitir a todos.</p>
+              </div>
+              
+              <!-- Bloqueados -->
+              <div class="governance-block">
+                <p class="governance-subtitle">Exceto estes contatos:</p>
+                <div v-for="(item, idx) in (config.tools[tool.key + 'BlockedContacts'] || [])"
+                     :key="item.id"
+                     class="governance-row">
+                  <span class="badge-count">{{ idx + 1 }}</span>
+                  <input type="text" v-model="item.contact" placeholder="E-mail, CPF ou identificador do contato" class="input-governance">
+                  <button class="btn-icon" @click="removeBlockedContact(tool.key, item.id)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                </div>
+                <button class="btn btn-add trigger-add" @click="addBlockedContact(tool.key)">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  Adicionar contato bloqueado
+                </button>
+              </div>
+              
+              <!-- Instruções IA para governança -->
+              <div class="field-group" style="margin-top: 0.75rem;">
+                <label class="label">📋 Instruções IA sobre governança:</label>
+                <textarea 
+                  v-if="!config.tools[tool.key + 'GovernanceInstructions']"
+                  placeholder="Ex: Sempre pergunte o nome completo e CPF do responsável antes de acessar dados financeiros. Nunca compartilhe dados de mais de um aluno sem a confirmação da secretaria."
+                  @input="config.tools[tool.key + 'GovernanceInstructions'] = ($event.target as HTMLTextAreaElement).value"
+                ></textarea>
+                <textarea 
+                  v-else
+                  v-model="config.tools[tool.key + 'GovernanceInstructions']"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="tool-item__divider" />
+
             <!-- Lista de gatilhos -->
             <div class="triggers-section">
               <p class="triggers-section__title">🎯 Gatilhos (Quando a IA deve usar esta tool):</p>
@@ -112,7 +206,7 @@ function removeTrigger(triggersKey, id) {
                     → <em>{{ assistantName() }}</em> vai {{ tool.label.toLowerCase() }}
                   </div>
                 </div>
-                <button class="btn-icon" @click="removeTrigger(tool.triggersKey, id)">
+                <button class="btn-icon" @click="removeTrigger(tool.triggersKey, trigger.id)">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                   </svg>
@@ -229,5 +323,86 @@ function removeTrigger(triggersKey, id) {
   font-size: 0.8rem;
   font-weight: 600;
   color: #4b5563;
+}
+
+/* ── Governance section ─────────────────────────────────── */
+.governance-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.governance-block {
+  background: white;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--r-sm);
+  padding: 0.6rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.governance-subtitle {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1e40af;
+  margin: 0;
+}
+
+.governance-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.input-governance {
+  flex: 1;
+  border-radius: 4px;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #d1d5db;
+  font-family: inherit;
+  font-size: 0.8rem;
+}
+
+.input-governance:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.governance-note {
+  font-size: 0.7rem;
+  color: #6b7280;
+  margin: 0.25rem 0 0 0;
+}
+
+.badge-count {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover {
+  background: #f3f4f6;
+  color: #dc2626;
 }
 </style>

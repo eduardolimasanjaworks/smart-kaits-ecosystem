@@ -53,9 +53,107 @@ async def call_kaits_api(
                 timeout=30.0
             )
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+            
+            # Verifica se a resposta foi bem-sucedida
+            if result.get("sucesso") == "1":
+                return result
+            else:
+                return {
+                    "sucesso": "0",
+                    "msg": result.get("msg", "Erro desconhecido na API do KAITS")
+                }
+    except httpx.HTTPStatusError as e:
+        return {"sucesso": "0", "msg": f"Erro HTTP na API: {e.response.status_code}"}
+    except httpx.TimeoutException:
+        return {"sucesso": "0", "msg": "Tempo esgotado na API do KAITS"}
     except Exception as e:
         return {"sucesso": "0", "msg": str(e)}
+
+
+def format_kaits_response(api_result: dict) -> str:
+    """
+    Formata a resposta do KAITS para o usuário final.
+    Se a resposta for muito longa, resumindo os pontos principais.
+    """
+    if not api_result:
+        return "Nenhum dado encontrado."
+    
+    formatted_text = []
+    
+    if "tudosepara" in api_result:
+        ts = api_result["tudosepara"]
+        ts_cursos = ts.get("cursos", [])
+        ts_estagios = ts.get("estagios", [])
+        ts_turmas = ts.get("turmas", [])
+        
+        formatted_text.append(f"Encontrei:")
+        if ts_cursos:
+            formatted_text.append(f"• {len(ts_cursos)} curso(s)")
+        if ts_estagios:
+            formatted_text.append(f"• {len(ts_estagios)} estágio(s)")
+        if ts_turmas:
+            formatted_text.append(f"• {len(ts_turmas)} turma(s)")
+        
+        # Adiciona detalhes se a lista não for muito longa
+        if ts_turmas and len(ts_turmas) <= 5:
+            formatted_text.append("\nTurmas disponíveis:")
+            for turma in ts_turmas[:5]:
+                turma_str = "  - "
+                turma_nome = turma.get("turma") or turma.get("nome") or ""
+                turma_str += turma_nome
+                if turma.get("curso"):
+                    turma_str += f" {turma.get('curso')}"
+                if turma.get("estagio"):
+                    turma_str += f" - {turma.get('estagio')}"
+                if turma.get("idTurm"):
+                    turma_str += f" (ID: {turma.get('idTurm')})"
+                formatted_text.append(turma_str)
+    
+    if "aulasTurma" in api_result:
+        aulas = api_result["aulasTurma"].get("aulas", [])
+        formatted_text.append(f"\nAulas encontradas: {len(aulas)}")
+        for aula in aulas[:5]:
+            aula_str = "  - "
+            if aula.get("nome"):
+                aula_str += aula.get("nome")
+            if aula.get("data"):
+                aula_str += f" ({aula.get('data')}"
+            if aula.get("hora"):
+                aula_str += f" às {aula.get('hora')}"
+            aula_str += ")"
+            formatted_text.append(aula_str)
+        if len(aulas) > 5:
+            formatted_text.append(f"  ... e mais {len(aulas) - 5} aulas")
+    
+    if "alunos" in api_result:
+        alunos = api_result["alunos"]
+        formatted_text.append(f"\nAlunos encontrados: {len(alunos)}")
+        for aluno in alunos[:5]:
+            aluno_str = "  - "
+            if aluno.get("nome"):
+                aluno_str += aluno.get("nome")
+            if aluno.get("matricula"):
+                aluno_str += f" (Matrícula: {aluno.get('matricula')})"
+            formatted_text.append(aluno_str)
+        if len(alunos) > 5:
+            formatted_text.append(f"  ... e mais {len(alunos) - 5} alunos")
+    
+    if "valores" in api_result:
+        valores = api_result["valores"]
+        formatted_text.append("\nValores encontrados:")
+        if valores.get("taxasMatricula"):
+            formatted_text.append("  Taxas de matrícula:")
+            for taxa in valores["taxasMatricula"][:3]:
+                taxa_str = f"    - {taxa.get('nome', '')}: R$ {taxa.get('valor', '')}"
+                formatted_text.append(taxa_str)
+        if valores.get("valores"):
+            formatted_text.append("  Valores do curso:")
+            for valor in valores["valores"][:3]:
+                valor_str = f"    - {valor.get('nome', '')}: R$ {valor.get('valor', '')}"
+                formatted_text.append(valor_str)
+    
+    return "\n".join(formatted_text) if formatted_text else json.dumps(api_result, ensure_ascii=False)
 
 
 async def process_chat_message(
@@ -82,7 +180,7 @@ async def process_chat_message(
     
     # Adiciona o histórico no modelo
     if chat_history:
-        for hist_msg in chat_history[-6:]:  # Limita as últimas 6
+        for hist_msg in chat_history[-10:  # Aumenta o histórico para lembrar melhor o contexto
             role = "assistant" if hist_msg.get("from") == "ai" else "user"
             messages.append({"role": role, "content": hist_msg.get("text", "")})
             
@@ -126,7 +224,10 @@ async def process_chat_message(
                         "todasTurmas": {"type": "boolean", "description": "Buscar todas as turmas disponíveis"},
                         "todosCursos": {"type": "boolean", "description": "Buscar todos os cursos disponíveis"},
                         "todosEstagios": {"type": "boolean", "description": "Buscar todos os estágios disponíveis"},
-                        "limite": {"type": "integer", "description": f"Limite de resultados (padrão: {MAX_RESULTS_DEFAULT})"}
+                        "limite": {"type": "integer", "description": f"Limite de resultados (padrão: {MAX_RESULTS_DEFAULT})"},
+                        "curso_nome": {"type": "string", "description": "Nome do curso para filtrar"},
+                        "estagio_nome": {"type": "string", "description": "Nome do estágio para filtrar"},
+                        "turma_nome": {"type": "string", "description": "Nome da turma para filtrar"}
                     }
                 }
             }
@@ -142,7 +243,8 @@ async def process_chat_message(
                     "type": "object",
                     "properties": {
                         "idTurm": {"type": "string", "description": "ID da turma para consultar valores"},
-                        "soMatric": {"type": "boolean", "description": "Mostrar apenas valores de matrícula"}
+                        "soMatric": {"type": "boolean", "description": "Mostrar apenas valores de matrícula"},
+                        "turma_nome": {"type": "string", "description": "Nome da turma para consultar valores"}
                     }
                 }
             }
@@ -221,24 +323,24 @@ async def process_chat_message(
             
             elif t_name == "consult_classes":
                 api_result = {}
-                needs_more_info = False
                 
                 if token_to_use:
                     limite = args.get("limite", MAX_RESULTS_DEFAULT)
                     
                     # Verifica se a busca é muito genérica
-                    if args.get("todasTurmas") or args.get("todosCursos") or args.get("todosEstagios"):
+                    if args.get("todasTurmas") or args.get("todosCursos") or args.get("todosEstagios") or args.get("curso_nome") or args.get("estagio_nome") or args.get("turma_nome"):
                         tudosepara = await call_kaits_api(
                             token_to_use,
                             endpoint="cursos",
                             action="tudosepara"
                         )
-                        api_result["tudosepara"] = tudosepara
-                        
-                        # Verifica se a resposta é muito longa
-                        json_length = len(json.dumps(api_result, ensure_ascii=False))
-                        if json_length > MAX_JSON_LENGTH:
-                            needs_more_info = True
+                        if tudosepara.get("sucesso") == "1":
+                            api_result["tudosepara"] = tudosepara
+                        else:
+                            return {
+                                "text": f"Ocorreu um erro: {tudosepara.get('msg', 'Erro ao consultar dados')}",
+                                "audit": {"type": "tool", "headline": "Erro na consulta KAITS", "detail": args}
+                            }
                     
                     if args.get("idTurm"):
                         aulas_turma = await call_kaits_api(
@@ -247,18 +349,28 @@ async def process_chat_message(
                             action="aulasTurma",
                             params={"idTurm": args["idTurm"]}
                         )
-                        api_result["aulasTurma"] = aulas_turma
+                        if aulas_turma.get("sucesso") == "1":
+                            api_result["aulasTurma"] = aulas_turma
+                        else:
+                            return {
+                                "text": f"Ocorreu um erro: {aulas_turma.get('msg', 'Erro ao consultar aulas')}",
+                                "audit": {"type": "tool", "headline": "Erro na consulta KAITS", "detail": args}
+                            }
                 
-                if needs_more_info:
-                    return {
-                        "text": "Encontrei muitos resultados! Para poder te ajudar melhor, poderia me dizer: \n1. Qual curso você tem interesse? \n2. Ou qual turma? \n3. Ou se você quer aulas de um dia específico?",
-                        "audit": {"type": "tool", "headline": "Pedir mais informações para filtrar", "detail": args}
-                    }
-                elif api_result:
-                    return {
-                        "text": f"Consultei o sistema KAITS e encontrei: {json.dumps(api_result, ensure_ascii=False)}",
-                        "audit": {"type": "tool", "headline": "Consultou turmas/grade via KAITS API", "detail": args}
-                    }
+                if api_result:
+                    # Verifica se a resposta é muito longa
+                    json_length = len(json.dumps(api_result, ensure_ascii=False))
+                    if json_length > MAX_JSON_LENGTH:
+                        return {
+                            "text": "Encontrei muitos resultados! Para poder te ajudar melhor, poderia me dizer:\n1. Qual curso você tem interesse?\n2. Ou qual turma?\n3. Ou se você quer aulas de um dia específico?",
+                            "audit": {"type": "tool", "headline": "Pedir mais informações para filtrar", "detail": args}
+                        }
+                    else:
+                        formatted_text = format_kaits_response(api_result)
+                        return {
+                            "text": f"Consultei o sistema KAITS: \n{formatted_text}",
+                            "audit": {"type": "tool", "headline": "Consultou turmas/grade via KAITS API", "detail": args}
+                        }
                 else:
                     return {
                         "text": "Tentei consultar o sistema, mas não consegui acessar a API no momento. Deseja que eu fale com a secretaria?",
@@ -274,10 +386,16 @@ async def process_chat_message(
                         action="valores",
                         params=args
                     )
+                    if api_result.get("sucesso") != "1":
+                        return {
+                            "text": f"Ocorreu um erro: {api_result.get('msg', 'Erro ao consultar valores')}",
+                            "audit": {"type": "tool", "headline": "Erro na consulta KAITS", "detail": args}
+                        }
                 
                 if api_result:
+                    formatted_text = format_kaits_response({"valores": api_result})
                     return {
-                        "text": f"Consultei o sistema KAITS e encontrei: {json.dumps(api_result, ensure_ascii=False)}",
+                        "text": f"Consultei o sistema KAITS: \n{formatted_text}",
                         "audit": {"type": "tool", "headline": "Consultou financeiro via KAITS API", "detail": args}
                     }
                 else:
@@ -288,7 +406,6 @@ async def process_chat_message(
             
             elif t_name == "search_student":
                 api_result = None
-                needs_more_info = False
                 
                 # Verifica se tem pelo menos um filtro
                 has_filter = any([
@@ -313,21 +430,25 @@ async def process_chat_message(
                         action="alunos",
                         params=args
                     )
-                    
-                    # Verifica se a resposta é muito longa
-                    if api_result and len(json.dumps(api_result, ensure_ascii=False)) > MAX_JSON_LENGTH:
-                        needs_more_info = True
+                    if api_result.get("sucesso") != "1":
+                        return {
+                            "text": f"Ocorreu um erro: {api_result.get('msg', 'Erro ao consultar alunos')}",
+                            "audit": {"type": "tool", "headline": "Erro na consulta KAITS", "detail": args}
+                        }
                 
-                if needs_more_info:
-                    return {
-                        "text": "Encontrei muitos alunos! Poderia me dar mais detalhes, como o nome completo ou a turma?",
-                        "audit": {"type": "tool", "headline": "Pedir mais informações para filtrar alunos", "detail": args}
-                    }
-                elif api_result:
-                    return {
-                        "text": f"Consultei o sistema KAITS e encontrei: {json.dumps(api_result, ensure_ascii=False)}",
-                        "audit": {"type": "tool", "headline": "Buscou aluno via KAITS API", "detail": args}
-                    }
+                if api_result:
+                    # Verifica se a resposta é muito longa
+                    if len(json.dumps(api_result, ensure_ascii=False)) > MAX_JSON_LENGTH:
+                        return {
+                            "text": "Encontrei muitos alunos! Poderia me dar mais detalhes, como o nome completo ou a turma?",
+                            "audit": {"type": "tool", "headline": "Pedir mais informações para filtrar alunos", "detail": args}
+                        }
+                    else:
+                        formatted_text = format_kaits_response({"alunos": api_result})
+                        return {
+                            "text": f"Consultei o sistema KAITS: \n{formatted_text}",
+                            "audit": {"type": "tool", "headline": "Buscou aluno via KAITS API", "detail": args}
+                        }
                 else:
                     return {
                         "text": "Tentei consultar o sistema, mas não consegui acessar a API no momento. Deseja que eu fale com a secretaria?",

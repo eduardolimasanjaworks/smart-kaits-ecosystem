@@ -5,9 +5,9 @@ Monta as diretrizes do Agente Inteligente, inserindo a Personalidade,
 o Roteiro, instruções de tools e a base recuperada do VectorDB dependendo de cada requisição.
 """
 
-def build_assistant_system_prompt(agent_config: dict, facts: list[dict] = None) -> str:
+def build_assistant_system_prompt(agent_config: dict, facts: list[dict] = None, user_identifier: str = None) -> str:
     """
-    Recebe a config do banco e o contexto recuperado do Qdrant.
+    Recebe a config do banco, o contexto recuperado do Qdrant e o identificador do usuário.
     Retorna a mega string do System Prompt final do gpt-4o-mini.
     """
     nome = agent_config.get("assistantName") or "Assistente Virtual"
@@ -30,6 +30,7 @@ Sua missão é fornecer suporte humanizado, preciso e eficiente, garantindo que 
 4. **Respostas Concisas**: Evite textos muito longos. Vá direto ao ponto, mas sem ser seco.
 5. **Idioma**: Responda no mesmo idioma do usuário (padrão: Português-BR).
 6. **Uso de Tools**: Sempre que possível, use as tools disponíveis para buscar informações em tempo real antes de consultar a base de conhecimento ou admitir que não sabe!
+7. **Governança de Acesso**: SEMPRE respeite as regras de acesso definidas para cada ferramenta!
 """
     roteiro = agent_config.get("scriptRules") or []
     
@@ -50,28 +51,40 @@ Sua missão é fornecer suporte humanizado, preciso e eficiente, garantindo que 
             "name": "Consultar grade, turmas e aulas",
             "description": "Busca horários, turmas disponíveis e aulas por data ou turma.",
             "instructions_key": "consultClassesInstructions",
-            "triggers_key": "consultClassesTriggers"
+            "triggers_key": "consultClassesTriggers",
+            "governance_key": "consultClassesGovernanceInstructions",
+            "allowed_key": "consultClassesAllowedContacts",
+            "blocked_key": "consultClassesBlockedContacts"
         },
         {
             "key": "checkFinancial",
             "name": "Verificar finanças (pendências, boletos)",
             "description": "Consulta valores de turmas, pendências de alunos ou responsáveis por CPF.",
             "instructions_key": "checkFinancialInstructions",
-            "triggers_key": "checkFinancialTriggers"
+            "triggers_key": "checkFinancialTriggers",
+            "governance_key": "checkFinancialGovernanceInstructions",
+            "allowed_key": "checkFinancialAllowedContacts",
+            "blocked_key": "checkFinancialBlockedContacts"
         },
         {
             "key": "searchStudent",
             "name": "Buscar dados de aluno/responsável",
             "description": "Busca dados de usuário (nome, CPF, e-mail, telefone).",
             "instructions_key": "searchStudentInstructions",
-            "triggers_key": "searchStudentTriggers"
+            "triggers_key": "searchStudentTriggers",
+            "governance_key": "searchStudentGovernanceInstructions",
+            "allowed_key": "searchStudentAllowedContacts",
+            "blocked_key": "searchStudentBlockedContacts"
         },
         {
             "key": "enrollStudent",
             "name": "Iniciar pré-matrícula",
             "description": "Inicia processo de matrícula para novo aluno.",
             "instructions_key": "enrollStudentInstructions",
-            "triggers_key": "enrollStudentTriggers"
+            "triggers_key": "enrollStudentTriggers",
+            "governance_key": "enrollStudentGovernanceInstructions",
+            "allowed_key": "enrollStudentAllowedContacts",
+            "blocked_key": "enrollStudentBlockedContacts"
         }
     ]
 
@@ -88,9 +101,29 @@ Sua missão é fornecer suporte humanizado, preciso e eficiente, garantindo que 
             if tools_config.get(tool["key"]):
                 prompt += f"\n### {tool['name']}\n"
                 prompt += f"- O que faz: {tool['description']}\n"
+                
+                # Adiciona regras de governança
+                allowed_contacts = tools_config.get(tool["allowed_key"], [])
+                blocked_contacts = tools_config.get(tool["blocked_key"], [])
+                
+                if allowed_contacts and len(allowed_contacts) > 0:
+                    contacts_str = ", ".join([c.get("contact", "") for c in allowed_contacts if c.get("contact")])
+                    if contacts_str:
+                        prompt += f"- APENAS permitido para: {contacts_str}\n"
+                
+                if blocked_contacts and len(blocked_contacts) > 0:
+                    contacts_str = ", ".join([c.get("contact", "") for c in blocked_contacts if c.get("contact")])
+                    if contacts_str:
+                        prompt += f"- BLOQUEADO para: {contacts_str}\n"
+                
+                governance_instructions = tools_config.get(tool["governance_key"], "")
+                if governance_instructions:
+                    prompt += f"- Regras de governança: {governance_instructions}\n"
+                
                 instructions = tools_config.get(tool["instructions_key"], "")
                 if instructions:
                     prompt += f"- Instruções especiais: {instructions}\n"
+                
                 triggers = tools_config.get(tool["triggers_key"], [])
                 if triggers:
                     prompt += "- Quando usar:\n"
