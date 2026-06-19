@@ -47,40 +47,143 @@ Sua missão é fornecer suporte humanizado, preciso e eficiente, garantindo que 
     tools_config = agent_config.get("tools", {})
     tools_definitions = [
         {
+            "key": "consultCourses",
+            "name": "Consultar cursos",
+            "description": "Busca cursos disponíveis da escola.",
+            "instructions_key": "consultCoursesInstructions",
+            "response_key": "consultCoursesResponseInstructions",
+            "triggers_key": "consultCoursesTriggers",
+            "governance_key": "consultCoursesGovernanceInstructions",
+            "allowed_key": "consultCoursesAllowedContacts",
+            "blocked_key": "consultCoursesBlockedContacts"
+        },
+        {
+            "key": "consultStages",
+            "name": "Consultar estágios ou níveis do curso",
+            "description": "Busca os estágios, níveis ou módulos de um curso.",
+            "instructions_key": "consultStagesInstructions",
+            "response_key": "consultStagesResponseInstructions",
+            "triggers_key": "consultStagesTriggers",
+            "governance_key": "consultStagesGovernanceInstructions",
+            "allowed_key": "consultStagesAllowedContacts",
+            "blocked_key": "consultStagesBlockedContacts"
+        },
+        {
             "key": "consultClasses",
-            "name": "Consultar grade, turmas e aulas",
-            "description": "Busca horários, turmas disponíveis e aulas por data ou turma.",
+            "name": "Consultar turmas disponíveis",
+            "description": "Busca turmas disponíveis de um curso ou estágio.",
             "instructions_key": "consultClassesInstructions",
+            "response_key": "consultClassesResponseInstructions",
             "triggers_key": "consultClassesTriggers",
             "governance_key": "consultClassesGovernanceInstructions",
             "allowed_key": "consultClassesAllowedContacts",
             "blocked_key": "consultClassesBlockedContacts"
         },
         {
+            "key": "consultClassSchedule",
+            "name": "Consultar horários e aulas de uma turma",
+            "description": "Busca agenda, horários e aulas cadastradas de uma turma.",
+            "instructions_key": "consultClassScheduleInstructions",
+            "response_key": "consultClassScheduleResponseInstructions",
+            "triggers_key": "consultClassScheduleTriggers",
+            "governance_key": "consultClassScheduleGovernanceInstructions",
+            "allowed_key": "consultClassScheduleAllowedContacts",
+            "blocked_key": "consultClassScheduleBlockedContacts"
+        },
+        {
+            "key": "consultPricing",
+            "name": "Consultar valores de uma turma",
+            "description": "Consulta matrícula, mensalidade, material e valores da turma.",
+            "instructions_key": "consultPricingInstructions",
+            "response_key": "consultPricingResponseInstructions",
+            "triggers_key": "consultPricingTriggers",
+            "governance_key": "consultPricingGovernanceInstructions",
+            "allowed_key": "consultPricingAllowedContacts",
+            "blocked_key": "consultPricingBlockedContacts"
+        },
+        {
             "key": "checkFinancial",
-            "name": "Verificar finanças (pendências, boletos)",
-            "description": "Consulta valores de turmas, pendências de alunos ou responsáveis por CPF.",
+            "name": "Consultar ficha financeira do aluno",
+            "description": "Consulta pagamentos, pendências, boletos e ficha financeira do aluno.",
             "instructions_key": "checkFinancialInstructions",
+            "response_key": "checkFinancialResponseInstructions",
             "triggers_key": "checkFinancialTriggers",
             "governance_key": "checkFinancialGovernanceInstructions",
             "allowed_key": "checkFinancialAllowedContacts",
             "blocked_key": "checkFinancialBlockedContacts"
         },
         {
+            "key": "listClassStudents",
+            "name": "Consultar alunos de uma turma",
+            "description": "Lista os alunos e matrículas vinculados a uma turma.",
+            "instructions_key": "listClassStudentsInstructions",
+            "response_key": "listClassStudentsResponseInstructions",
+            "triggers_key": "listClassStudentsTriggers",
+            "governance_key": "listClassStudentsGovernanceInstructions",
+            "allowed_key": "listClassStudentsAllowedContacts",
+            "blocked_key": "listClassStudentsBlockedContacts"
+        },
+        {
             "key": "searchStudent",
-            "name": "Buscar dados de aluno/responsável",
-            "description": "Busca dados de usuário (nome, CPF, e-mail, telefone).",
+            "name": "Buscar aluno por nome, CPF ou matrícula",
+            "description": "Busca dados básicos de aluno por nome, CPF, e-mail, RG ou matrícula.",
             "instructions_key": "searchStudentInstructions",
+            "response_key": "searchStudentResponseInstructions",
             "triggers_key": "searchStudentTriggers",
             "governance_key": "searchStudentGovernanceInstructions",
             "allowed_key": "searchStudentAllowedContacts",
             "blocked_key": "searchStudentBlockedContacts"
         },
         {
+            "key": "getStudentDetails",
+            "name": "Ver ficha completa de um aluno",
+            "description": "Busca dados completos do aluno, responsáveis, telefones, endereços e matrículas.",
+            "instructions_key": "getStudentDetailsInstructions",
+            "response_key": "getStudentDetailsResponseInstructions",
+            "triggers_key": "getStudentDetailsTriggers",
+            "governance_key": "getStudentDetailsGovernanceInstructions",
+            "allowed_key": "getStudentDetailsAllowedContacts",
+            "blocked_key": "getStudentDetailsBlockedContacts"
+        },
+        {
+            "key": "consultCourseProgram",
+            "name": "Consultar programa do curso",
+            "description": "Busca o conteúdo programático do curso ou estágio.",
+            "instructions_key": "consultCourseProgramInstructions",
+            "response_key": "consultCourseProgramResponseInstructions",
+            "triggers_key": "consultCourseProgramTriggers",
+            "governance_key": "consultCourseProgramGovernanceInstructions",
+            "allowed_key": "consultCourseProgramAllowedContacts",
+            "blocked_key": "consultCourseProgramBlockedContacts"
+        },
+        {
+            "key": "consultTeachers",
+            "name": "Consultar professores",
+            "description": "Busca professores habilitados da escola.",
+            "instructions_key": "consultTeachersInstructions",
+            "response_key": "consultTeachersResponseInstructions",
+            "triggers_key": "consultTeachersTriggers",
+            "governance_key": "consultTeachersGovernanceInstructions",
+            "allowed_key": "consultTeachersAllowedContacts",
+            "blocked_key": "consultTeachersBlockedContacts"
+        },
+        {
+            "key": "consultDocuments",
+            "name": "Consultar documentos emitidos",
+            "description": "Busca documentos emitidos para aluno ou matrícula.",
+            "instructions_key": "consultDocumentsInstructions",
+            "response_key": "consultDocumentsResponseInstructions",
+            "triggers_key": "consultDocumentsTriggers",
+            "governance_key": "consultDocumentsGovernanceInstructions",
+            "allowed_key": "consultDocumentsAllowedContacts",
+            "blocked_key": "consultDocumentsBlockedContacts"
+        },
+        {
             "key": "enrollStudent",
             "name": "Iniciar pré-matrícula",
             "description": "Inicia processo de matrícula para novo aluno.",
             "instructions_key": "enrollStudentInstructions",
+            "response_key": "enrollStudentResponseInstructions",
             "triggers_key": "enrollStudentTriggers",
             "governance_key": "enrollStudentGovernanceInstructions",
             "allowed_key": "enrollStudentAllowedContacts",
@@ -123,17 +226,21 @@ Sua missão é fornecer suporte humanizado, preciso e eficiente, garantindo que 
                 governance_instructions = tools_config.get(tool["governance_key"], "")
                 if governance_instructions:
                     prompt += f"- Instruções de governança: {governance_instructions}\n"
-                
-                instructions = tools_config.get(tool["instructions_key"], "")
+
+                instructions = (tools_config.get(tool["instructions_key"], "") or "").strip()
                 if instructions:
-                    prompt += f"- Instruções especiais: {instructions}\n"
-                
-                triggers = tools_config.get(tool["triggers_key"], [])
-                if triggers:
-                    prompt += "- Quando usar:\n"
-                    for t in triggers:
-                        if t.get("condition"):
-                            prompt += f"  - {t['condition']}\n"
+                    prompt += f"- Quando usar / orientações: {instructions}\n"
+                else:
+                    triggers = tools_config.get(tool["triggers_key"], [])
+                    if triggers:
+                        prompt += "- Quando usar:\n"
+                        for t in triggers:
+                            if t.get("condition"):
+                                prompt += f"  - {t['condition']}\n"
+
+                response_instructions = (tools_config.get(tool["response_key"], "") or "").strip()
+                if response_instructions:
+                    prompt += f"- Como responder depois da consulta: {response_instructions}\n"
 
     prompt += "\n## BASE DE CONHECIMENTO (RAG)\n"
     if facts:

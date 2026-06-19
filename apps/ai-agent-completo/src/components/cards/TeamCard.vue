@@ -3,7 +3,7 @@
  * cards/TeamCard.vue
  * "Quem é sua equipe?" — Cadastro de membros e configuração de handover
  */
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import DidacticFieldModal from '../DidacticFieldModal.vue'
 
 const props = defineProps({
@@ -23,6 +23,10 @@ const previewVars = computed(() => ({
     'Cliente perguntou sobre matrícula 2026; a I.A. não tinha o valor na base.',
   nome_atendente: props.config.fallbackContact || 'Maria',
 }))
+
+const namedMembers = computed(() =>
+  (props.config.teamMembers || []).filter((member) => (member.name || '').trim().length >= 2)
+)
 
 const EXAMPLE_ATTENDANT =
   '🔔 Novo atendimento!\nCliente: {whatsapp_cliente}\nResumo: {resumo_conversa}\nPor favor, responda pelo WhatsApp.'
@@ -65,6 +69,12 @@ function messagePreview(text) {
   out = out.replaceAll('{nome_atendente}', map.nome_atendente)
   return out.length > 120 ? out.slice(0, 117) + '…' : out
 }
+
+onMounted(() => {
+  if (props.onboardingMode && !props.config.teamMembers.length) {
+    addMember()
+  }
+})
 </script>
 
 <template>
@@ -73,6 +83,23 @@ function messagePreview(text) {
       Parte {{ onboardingMicroStep + 1 }} de 2 ·
       {{ onboardingMicroStep === 0 ? 'Pessoas da equipe' : 'Transferência para humano' }}
     </p>
+
+    <div v-if="onboardingMode" class="team-steps">
+      <div class="team-step" :class="{ 'team-step--active': onboardingMicroStep === 0 }">
+        <span class="team-step__num">1</span>
+        <div>
+          <strong>Cadastre a pessoa</strong>
+          <p>Preencha nome e WhatsApp de quem pode assumir o atendimento.</p>
+        </div>
+      </div>
+      <div class="team-step" :class="{ 'team-step--active': onboardingMicroStep === 1 }">
+        <span class="team-step__num">2</span>
+        <div>
+          <strong>Escolha quem recebe a transferência</strong>
+          <p>Depois selecione a pessoa que entra quando a I.A. não souber responder.</p>
+        </div>
+      </div>
+    </div>
 
     <p v-if="!onboardingMode" class="team__intro">
       Cadastre as pessoas da sua equipe. Esses contatos podem receber avisos quando a I.A. não souber responder.
@@ -83,8 +110,8 @@ function messagePreview(text) {
       <div v-for="(member, idx) in config.teamMembers" :key="member.id" class="member-row">
         <span class="badge-count">{{ idx + 1 }}</span>
         <div class="member-row__fields">
-          <input v-model="member.name" placeholder="Nome (ex: Maria)" />
-          <input v-model="member.phone" placeholder="WhatsApp (ex: 11999001122)" type="tel" />
+          <input v-model="member.name" placeholder="Nome do funcionário (ex: Maria)" />
+          <input v-model="member.phone" placeholder="WhatsApp do funcionário (ex: 11999001122)" type="tel" />
         </div>
         <button class="btn-icon" @click="removeMember(member.id)" title="Remover">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
@@ -94,7 +121,8 @@ function messagePreview(text) {
       </div>
     </TransitionGroup>
 
-    <p v-if="!config.teamMembers.length" class="team__empty">Nenhum membro cadastrado ainda.</p>
+    <p v-if="!config.teamMembers.length" class="team__empty">Adicione pelo menos uma pessoa da equipe para transferir o atendimento.</p>
+    <p v-else-if="!namedMembers.length" class="team__hint">Preencha o nome de pelo menos um funcionário para habilitar a transferência para humano.</p>
 
     <button class="btn btn-add" @click="addMember">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -105,7 +133,6 @@ function messagePreview(text) {
     </div>
 
     <div
-      v-if="config.teamMembers.length > 0"
       v-show="!onboardingMode || onboardingMicroStep === 1"
       class="handover-section"
     >
@@ -113,15 +140,21 @@ function messagePreview(text) {
 
         <div class="hf-block">
           <label class="label hf-label">🤝 Eu não deduzo ou invento informações. Caso eu ainda não tenha aprendido algo, encaminho a pessoa pra quem?</label>
-          <select v-model="config.fallbackContact" class="fallback-select">
+          <select v-model="config.fallbackContact" class="fallback-select" :disabled="!namedMembers.length">
             <option value="" disabled>Escolher um humano...</option>
-            <option v-for="member in config.teamMembers" :key="member.id" :value="member.name">
-              👤 {{ member.name || 'Sem nome' }}
+            <option v-for="member in namedMembers" :key="member.id" :value="member.name">
+              👤 {{ member.name }}
             </option>
           </select>
+          <p v-if="!namedMembers.length" class="hf-empty">
+            Primeiro cadastre e nomeie pelo menos um funcionário na etapa anterior. Assim que houver alguém da equipe, a escolha aparece aqui.
+          </p>
+          <p v-else-if="!config.fallbackContact" class="hf-empty">
+            Escolha quem recebe a conversa quando a I.A. ainda não souber responder.
+          </p>
         </div>
 
-        <template v-if="config.fallbackContact">
+        <template v-if="config.fallbackContact && namedMembers.length">
 
           <div class="hf-block">
             <label class="label hf-label">📱 Mensagem para <strong>{{ config.fallbackContact }}</strong> (WhatsApp do atendente)</label>
@@ -200,14 +233,66 @@ function messagePreview(text) {
   padding: 0.4rem 0.6rem;
   margin: 0 0 0.15rem;
 }
+.team-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .55rem;
+}
+.team-step {
+  display: flex;
+  gap: .65rem;
+  align-items: flex-start;
+  padding: .75rem .8rem;
+  border: 1px solid #ccfbf1;
+  border-radius: 12px;
+  background: #f8fffe;
+}
+.team-step--active {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 3px rgba(20,184,166,.08);
+}
+.team-step__num {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: #ccfbf1;
+  color: #0f766e;
+  font-size: .8rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.team-step strong {
+  display: block;
+  font-size: .82rem;
+  color: #115e59;
+}
+.team-step p {
+  margin: .15rem 0 0;
+  font-size: .76rem;
+  line-height: 1.4;
+  color: #0f766e;
+}
 .team__intro { font-size: .8rem; color: var(--c-text-muted); }
 .team__empty { font-size: .8rem; color: var(--c-text-light); font-style: italic; }
+.team__hint {
+  margin: 0;
+  font-size: .8rem;
+  color: #0f766e;
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  border-radius: 10px;
+  padding: .65rem .8rem;
+}
 .team-list { display: flex; flex-direction: column; gap: .4rem; }
 
 .member-row { display: flex; align-items: center; gap: .5rem; }
 .member-row__fields { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; flex: 1; }
 
 @media (max-width: 600px) {
+  .team-steps { grid-template-columns: 1fr; }
   .member-row__fields { grid-template-columns: 1fr; }
 }
 
@@ -222,6 +307,22 @@ function messagePreview(text) {
 
 .fallback-select { background: white; border-color: #99f6e4; color: #115e59; font-weight: 600; cursor: pointer; }
 .fallback-select:focus { box-shadow: 0 0 0 3px rgba(20,184,166,.15); border-color: #14b8a6; }
+.fallback-select:disabled {
+  cursor: not-allowed;
+  opacity: .7;
+  background: #f8fafc;
+  color: #64748b;
+}
+.hf-empty {
+  margin: 0;
+  font-size: .78rem;
+  line-height: 1.45;
+  color: #0f766e;
+  background: white;
+  border: 1px dashed #99f6e4;
+  border-radius: 10px;
+  padding: .65rem .75rem;
+}
 
 .hf-summary {
   background: white;

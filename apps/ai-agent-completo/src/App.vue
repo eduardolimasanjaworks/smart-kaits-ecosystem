@@ -16,8 +16,7 @@ import { configService, authService, whatsappService } from './services/api.js'
 import {
   consumeAccessTokenFromHash,
   createEmbedPostMessageHandler,
-  isEmbeddedInIframe,
-  requestParentFullscreen
+  isEmbeddedInIframe
 } from './embed/embedAuth.js'
 import { devLog } from './utils/devLog.js'
 import { useSchoolRealtime } from './composables/useSchoolRealtime.js'
@@ -84,9 +83,18 @@ const agentConfig = ref({
   teamMembers: [], faqItems: [],
   fallbackContact: '', docs: [], fallbackMessage: '',
   tools: {
+    consultCourses: false, consultCoursesTriggers: [],
+    consultStages: false, consultStagesTriggers: [],
     consultClasses: false, consultClassesTriggers: [],
+    consultClassSchedule: false, consultClassScheduleTriggers: [],
+    consultPricing: false, consultPricingTriggers: [],
+    listClassStudents: false, listClassStudentsTriggers: [],
     checkSchedule: false, checkScheduleTriggers: [],
     scheduleQ1: 'Qual o ano escolar?', scheduleQ2: 'Qual o turno?',
+    getStudentDetails: false, getStudentDetailsTriggers: [],
+    consultCourseProgram: false, consultCourseProgramTriggers: [],
+    consultTeachers: false, consultTeachersTriggers: [],
+    consultDocuments: false, consultDocumentsTriggers: [],
     enrollStudent: false, enrollStudentTriggers: [],
     checkFinancial: false, checkFinancialTriggers: [],
   },
@@ -116,56 +124,20 @@ const realtimeGuards = { lastLocalEditAt, skipRefreshUntil: skipConfigRefreshUnt
 useSchoolRealtime(agentConfig, bootstrapStatus, suppressConfigAutosave, realtimeGuards)
 
 const isEmbedded = computed(() => isEmbeddedInIframe())
+const headerZoom = ref(Number(localStorage.getItem('smart_header_zoom') || '1'))
 
-const showEmbedFullscreenHint = computed(
-  () => bootstrapStatus.value === 'ready' && isEmbedded.value
-)
-
-function openEmbedFullscreen() {
-  // 1) Pede ao hospedeiro (qualquer portal com listener no iframe)
-  if (isEmbeddedInIframe()) {
-    requestParentFullscreen()
-  }
-
-  // 2) Sempre tenta tela cheia do documento do Smart Kaits (funciona mesmo sem botão no mock/pai)
-  if (openEmbedFullscreenDocument()) return
-
-  const fe = window.frameElement
-  if (fe) {
-    if (fe.requestFullscreen) {
-      fe.requestFullscreen().catch(() => openEmbedInNewTab())
-      return
-    }
-    if (fe.webkitRequestFullscreen) {
-      fe.webkitRequestFullscreen()
-      return
-    }
-    if (fe.msRequestFullscreen) {
-      fe.msRequestFullscreen()
-      return
-    }
-  }
-  openEmbedInNewTab()
+function setHeaderZoom(nextZoom) {
+  const normalized = Math.min(1.15, Math.max(0.9, Number(nextZoom.toFixed(2))))
+  headerZoom.value = normalized
+  localStorage.setItem('smart_header_zoom', String(normalized))
 }
 
-function openEmbedFullscreenDocument() {
-  const el = document.documentElement
-  if (el.requestFullscreen) {
-    el.requestFullscreen().catch(() => {})
-    return true
-  }
-  if (el.webkitRequestFullscreen) {
-    el.webkitRequestFullscreen()
-    return true
-  }
-  return false
+function changeHeaderZoom(delta) {
+  setHeaderZoom(headerZoom.value + delta)
 }
 
-function openEmbedInNewTab() {
-  const token = localStorage.getItem('kaits_token')
-  const path = `${window.location.pathname}${window.location.search || ''}`
-  const hash = token ? `#access_token=${encodeURIComponent(token)}` : ''
-  window.open(`${window.location.origin}${path}${hash}`, '_blank', 'noopener,noreferrer')
+function resetHeaderZoom() {
+  setHeaderZoom(1)
 }
 
 /** URL direta sem token: obrigatório slug + senha da escola (sem login demo partilhado). */
@@ -1092,6 +1064,7 @@ function openFullEditor(docId) {
       'app-header--onboarding': onboardingMode,
       'app-header--tutorial-dim': onboardingMode && !showExitModal && !showModal
     }"
+    :style="{ '--header-zoom': headerZoom }"
   >
     <div class="app-header__brand">
       <span class="app-header__dot" />
@@ -1170,15 +1143,11 @@ function openFullEditor(docId) {
         <span class="status-text">{{ whatsappStatus === 'conectado' ? 'WhatsApp' : 'Conectar' }}</span>
       </div>
 
-      <button
-        v-if="showEmbedFullscreenHint"
-        type="button"
-        class="btn btn-ghost btn-embed-fs btn-embed-fs--primary"
-        title="Tela cheia do Smart Kaits (pede ao portal ou expande esta janela)"
-        @click="openEmbedFullscreen"
-      >
-        ⛶ Tela cheia
-      </button>
+      <div class="header-zoom" aria-label="Ajuste de zoom do cabeçalho">
+        <button type="button" class="header-zoom__btn" title="Diminuir zoom do cabeçalho" @click="changeHeaderZoom(-0.05)">A-</button>
+        <button type="button" class="header-zoom__value" title="Voltar ao zoom padrão" @click="resetHeaderZoom">{{ Math.round(headerZoom * 100) }}%</button>
+        <button type="button" class="header-zoom__btn" title="Aumentar zoom do cabeçalho" @click="changeHeaderZoom(0.05)">A+</button>
+      </div>
 
       <button class="btn btn-test btn-fun" @click="showTestChat = true" style="padding: .4rem .8rem; font-size: .8rem;">
         Simular Chat 💬
@@ -1785,6 +1754,7 @@ input:checked + .pause-slider:before { transform: translateX(14px); }
   position: sticky;
   top: 0;
   z-index: 140;
+  font-size: calc(1rem * var(--header-zoom, 1));
 }
 .app-header--embed {
   height: auto;
@@ -1810,8 +1780,8 @@ input:checked + .pause-slider:before { transform: translateX(14px); }
 .app-header--embed .header-progress-wrap,
 .app-header--embed .xp-badge,
 .app-header--embed .connection-status,
-.app-header--embed .btn-embed-fs,
-.app-header--embed .btn-test {
+.app-header--embed .btn-test,
+.app-header--embed .header-zoom {
   font-size: 0.7rem;
 }
 .app-header--onboarding {
@@ -1834,35 +1804,25 @@ input:checked + .pause-slider:before { transform: translateX(14px); }
 .app-header--onboarding .btn-test {
   display: none;
 }
-.app-header--tutorial-dim .btn-embed-fs {
-  position: relative;
-  z-index: 5;
-  filter: none !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-  background: #fff !important;
-  border-color: var(--c-primary) !important;
-  color: var(--c-primary) !important;
-  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.2);
-}
-.app-header__actions { display: flex; align-items: center; gap: .85rem; flex-wrap: wrap; }
-.app-header__brand { display: flex; align-items: center; gap: .6rem; }
+.app-header__actions { display: flex; align-items: center; justify-content: flex-end; gap: .85rem; flex-wrap: wrap; min-width: 0; }
+.app-header__brand { display: flex; align-items: center; gap: .6rem; min-width: 0; }
 .app-header__dot {
-  width: 10px;
-  height: 10px;
+  width: calc(10px * var(--header-zoom, 1));
+  height: calc(10px * var(--header-zoom, 1));
   border-radius: 50%;
   background: linear-gradient(135deg, var(--c-primary), #818cf8);
   box-shadow: 0 0 10px rgba(79, 70, 229, 0.45);
 }
 .app-header__title {
   font-weight: 800;
-  font-size: 1.05rem;
+  font-size: clamp(0.92rem, calc(0.9rem + 0.2vw), 1.05rem);
   letter-spacing: -0.02em;
   color: #0f172a;
+  white-space: nowrap;
 }
 .build-stamp {
   margin-left: 0.35rem;
-  font-size: 0.62rem;
+  font-size: calc(0.62rem * var(--header-zoom, 1));
   font-weight: 700;
   color: #64748b;
   background: #f1f5f9;
@@ -1884,26 +1844,78 @@ input:checked + .pause-slider:before { transform: translateX(14px); }
 }
 .btn-unfocus-header:hover { color: #0f172a !important; background: #f8fafc; }
 
-.btn-embed-fs {
-  font-size: 0.72rem !important;
-  font-weight: 700 !important;
-  padding: 0.35rem 0.55rem !important;
-  border: 1px solid #e2e8f0 !important;
-  color: #64748b !important;
-  white-space: nowrap;
+.header-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  background: #f8fbff;
+  flex-shrink: 0;
 }
-.btn-embed-fs:hover {
-  background: #f8fafc !important;
-  color: #0f172a !important;
+.header-zoom__btn,
+.header-zoom__value {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: #334155;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.35rem 0.45rem;
+  border-radius: 999px;
+  cursor: pointer;
 }
-.btn-embed-fs--primary {
-  border-color: var(--c-primary) !important;
-  color: var(--c-primary) !important;
-  font-weight: 800 !important;
+.header-zoom__btn:hover,
+.header-zoom__value:hover {
+  background: #e0e7ff;
+  color: #312e81;
 }
-.btn-embed-fs--primary:hover {
-  background: var(--c-primary-dim) !important;
-  color: #312e81 !important;
+.header-zoom__value { min-width: 52px; }
+
+@media (max-width: 1180px) {
+  .app-header {
+    height: auto;
+    min-height: 64px;
+    padding: 0.6rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.6rem 0.75rem;
+  }
+  .app-header__brand,
+  .tutorial-incentive,
+  .app-header__actions {
+    width: 100%;
+  }
+  .app-header__actions {
+    justify-content: flex-start;
+    gap: 0.6rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-header {
+    padding: 0.55rem 0.75rem;
+  }
+  .app-header__title {
+    white-space: normal;
+    line-height: 1.15;
+  }
+  .build-stamp {
+    display: none;
+  }
+  .xp-badge,
+  .header-progress-wrap,
+  .pause-control,
+  .connection-status,
+  .header-zoom,
+  .btn-test {
+    width: 100%;
+  }
+  .header-zoom {
+    justify-content: center;
+  }
 }
 
 .qr-modal__footer {

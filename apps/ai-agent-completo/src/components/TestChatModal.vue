@@ -3,7 +3,7 @@
  * TestChatModal.vue v3 — "Lúdico & Narrativo"
  * Split-screen: Chat (Esq) + Painel de Raciocínio da I.A. (Dir)
  */
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, onMounted } from 'vue'
 import { aiService, api } from '../services/api.js'
 import { devLog } from '../utils/devLog.js'
 import AdvancedDocEditor from './modals/AdvancedDocEditor.vue'
@@ -17,6 +17,9 @@ const isTyping    = ref(false)
 const isRecording = ref(false)
 const messagesEl  = ref(null)
 const showReset   = ref(false)
+const showTokenInput = ref(false)
+const testKaitsToken = ref('')
+const testUserIdentifier = ref('')
 let   recognition = null
 
 const sidebarDocId = ref(null)
@@ -62,7 +65,33 @@ const name  = computed(() => props.config.assistantName || 'Assistente')
 const kPersonality = computed(() => props.config.personality?.trim().length > 0 || props.config.assistantName?.trim().length > 0)
 const kScript      = computed(() => props.config.greeting?.trim().length > 0 || props.config.scriptRules?.length > 0)
 const kFaq         = computed(() => props.config.faqItems?.length > 0)
-const kTools       = computed(() => props.config.tools?.consultClasses || props.config.tools?.checkSchedule || props.config.tools?.enrollStudent)
+const kTools       = computed(() =>
+  Object.entries(props.config.tools || {}).some(([key, value]) =>
+    !key.endsWith('Triggers') &&
+    !key.endsWith('Instructions') &&
+    !key.endsWith('GovernanceInstructions') &&
+    !key.endsWith('AllowedContacts') &&
+    !key.endsWith('BlockedContacts') &&
+    !key.endsWith('GovernanceMode') &&
+    typeof value === 'boolean' &&
+    value
+  )
+)
+
+onMounted(() => {
+  testKaitsToken.value = localStorage.getItem('test_kaits_api_token') || ''
+  testUserIdentifier.value = localStorage.getItem('test_kaits_user_identifier') || ''
+})
+
+watch(testKaitsToken, (value) => {
+  if (value?.trim()) localStorage.setItem('test_kaits_api_token', value.trim())
+  else localStorage.removeItem('test_kaits_api_token')
+})
+
+watch(testUserIdentifier, (value) => {
+  if (value?.trim()) localStorage.setItem('test_kaits_user_identifier', value.trim())
+  else localStorage.removeItem('test_kaits_user_identifier')
+})
 
 function now() {
   return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -85,7 +114,12 @@ async function simulateResponse(userMsg) {
       .filter(m => m.from === 'ai' || m.from === 'user')
       .map(m => ({ from: m.from, text: m.text }))
 
-    const responseData = await aiService.processChat(userMsg, history)
+    const responseData = await aiService.processChat(
+      userMsg,
+      history,
+      testKaitsToken.value || null,
+      testUserIdentifier.value || null
+    )
     
     // Converte o formato do backend para o formato esperado pelo frontend do modal
     let response = responseData.text
@@ -304,6 +338,15 @@ function closeTestChat() {
               <div v-else class="chat-header__sub">simulação de conversa</div>
             </div>
             <div class="chat-header__actions">
+              <button
+                type="button"
+                class="btn-token-toggle"
+                :class="{ 'btn-token-toggle--active': !!testKaitsToken }"
+                @click="showTokenInput = !showTokenInput"
+                :title="testKaitsToken ? 'Token KAITS configurado para o teste' : 'Configurar token KAITS para o teste'"
+              >
+                Token KAITS
+              </button>
               <button type="button" class="btn-exit-test" @click="closeTestChat">
                 Sair do teste
               </button>
@@ -312,6 +355,34 @@ function closeTestChat() {
               </button>
             </div>
           </div>
+
+          <Transition name="fade">
+            <div v-if="showTokenInput" class="token-panel">
+              <div class="token-panel__grid">
+                <div class="field-inline">
+                  <label class="token-label">Token da API KAITS para o teste</label>
+                  <input
+                    v-model="testKaitsToken"
+                    class="token-input"
+                    type="password"
+                    placeholder="Cole aqui o token da API da conta de teste"
+                  >
+                </div>
+                <div class="field-inline">
+                  <label class="token-label">Identificador do usuário no teste</label>
+                  <input
+                    v-model="testUserIdentifier"
+                    class="token-input"
+                    type="text"
+                    placeholder="Ex: secretaria@smart.test ou CPF"
+                  >
+                </div>
+              </div>
+              <p class="token-help">
+                Use esse campo quando quiser testar tools do KAITS com uma conta específica, sem depender do token principal da sessão.
+              </p>
+            </div>
+          </Transition>
 
           <div class="chat-messages" ref="messagesEl">
             <div v-if="config.isPaused" class="chat-paused-banner">
@@ -470,6 +541,65 @@ function closeTestChat() {
 }
 @media (max-width: 520px) {
   .btn-exit-test { padding: .4rem .55rem; font-size: .72rem; }
+}
+
+.btn-token-toggle {
+  font-family: inherit;
+  font-size: .75rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 999px;
+  padding: .42rem .7rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: .15s;
+}
+.btn-token-toggle:hover { background: #dbeafe; border-color: #93c5fd; }
+.btn-token-toggle--active { background: #dcfce7; border-color: #86efac; color: #166534; }
+
+.token-panel {
+  background: #f8fbff;
+  border-bottom: 1px solid #dbeafe;
+  padding: .85rem 1rem .95rem;
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+}
+.token-panel__grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: .75rem;
+}
+.field-inline { display: flex; flex-direction: column; gap: .32rem; }
+.token-label {
+  font-size: .75rem;
+  font-weight: 700;
+  color: #334155;
+}
+.token-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1.5px solid #cbd5e1;
+  background: white;
+  padding: .65rem .8rem;
+  font-family: inherit;
+  font-size: .85rem;
+}
+.token-input:focus {
+  outline: none;
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px rgba(91,95,207,.1);
+}
+.token-help {
+  margin: 0;
+  font-size: .76rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+@media (max-width: 720px) {
+  .token-panel__grid { grid-template-columns: 1fr; }
 }
 
 .chat-messages {
@@ -850,4 +980,3 @@ function closeTestChat() {
 
 .chat-input--disabled { opacity: 0.6; pointer-events: none; }
 </style>
-

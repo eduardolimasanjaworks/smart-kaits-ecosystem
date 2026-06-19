@@ -1,0 +1,1457 @@
+
+============================================================
+=== ALUNOS ===
+============================================================
+
+# busca alunos
+curl -X POST "https://api.kaits.com.br/alunos/" \
+  -F acao=alunos \
+  -F token=SEU_TOKEN_AQUI \
+  -F filtro={filtro} \
+  -F nome={nome} \
+  -F licenca={licenca} \
+  -F numMatric={numMatric} \
+  -F CPF={CPF} \
+  -F RG={RG} \
+  -F email={email}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - alunos: uma lista com os alunos de acordo com os filtros com os seguintes campos:
+#   - idAluno: identificador do aluno no Sistema KAITS
+#   - nome: nome do aluno
+#   - codinome: codinome (nome social) do aluno
+#   - registro: registro do aluno
+#   - nascimento: data de nascimento do aluno
+#   - CPF: CPF do aluno
+#   - RG: RG do aluno
+#   - emails: e-mails cadastrados do aluno separados por ponto e vírgula (;)
+#   - licencaIni: data de início da licença do aluno
+#   - licencaFim: data de término da licença do aluno
+
+# busca informações de um aluno
+curl -X POST "https://api.kaits.com.br/alunos/" \
+  -F acao=umAluno \
+  -F token=SEU_TOKEN_AQUI \
+  -F idAluno={idAluno}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - aluno: objeto com os dados do aluno
+#   - idAluno: identificador do aluno no Sistema KAITS
+#   - nome: nome do aluno
+#   - codinome: codinome (nome social) do aluno
+#   - registro: registro do aluno
+#   - nascimento: data de nascimento do aluno
+#   - licencaIni: data de início da licença do aluno
+#   - licencaFim: data de término da licença do aluno
+#   - perfil: nome do perfil do aluno
+#   - obs: observação do aluno
+#   - identidades: lista de documentos de identificação do aluno com:
+#   - tipo: tipo da identificação
+#   - numero: número da identificação
+#   - emails: lista de e-mails do aluno com:
+#   - tipo: tipo do e-mail
+#   - email: e-mail
+#   - fones: lista de telefones do aluno com:
+#   - tipo: tipo do telefone
+#   - ddi: DDI do telefone
+#   - ddd: DDD do telefone
+#   - fone: telefone
+#   - enderecos: lista de endereços do aluno com:
+#   - tipo: tipo do endereço
+#   - rua: logradouro
+#   - num: número
+#   - compl: complemento
+#   - bairro: bairro
+#   - cidade: cidade
+#   - UF: estado
+#   - CEP: CEP
+#   - matriculas: lista com as matrículas do aluno com:
+#   - idMatric: identificador interno da matrícula
+#   - numMatric: número da matrícula
+#   - ini: data de início da matrícula
+#   - fim: data de término da matrícula
+#   - curso: curso da matrícula
+#   - estagio: estágio da matrícula
+#   - turma: turma da matrícula
+#   - responsaveis: lista com os responsáveis pelo aluno com:
+#   - idResp: identificador único do responsável
+#   - nome: nome do responsável
+#   - codinome: codinome (nome social) do responsável
+#   - relacionamento: relacionamento entre o responsável e o aluno
+#   - ehFinanceiro: se é o responsável financeiro do aluno
+#   - ehPedagogico: se é o responsável pedagógico do aluno
+#   - nascimento: data de nascimento do responsável
+#   - e-mail: e-mail pessoal do responsável
+#   - fone: telefone do responsável
+#   - cel: celular do responsável
+#   - RG: RG do responsável
+#   - CPF: CPF do responsável
+
+# edita informações de um aluno
+curl -X POST "https://api.kaits.com.br/alunos/" \
+  -F acao=editaAluno \
+  -F token=SEU_TOKEN_AQUI \
+  -F idAluno={idAluno} \
+  -F dados={dados} \
+  -F codinome={codinome} \
+  -F nascimento={nascimento} \
+  -F obs={obs} \
+  -F email={email} \
+  -F dddFone={dddFone} \
+  -F fone={fone} \
+  -F dddCel={dddCel} \
+  -F cel={cel} \
+  -F CPF={CPF} \
+  -F RG={RG} \
+  -F enderecoRua={enderecoRua} \
+  -F enderecoNum={enderecoNum} \
+  -F enderecoCompl={enderecoCompl} \
+  -F enderecoBairro={enderecoBairro} \
+  -F enderecoCidade={enderecoCidade} \
+  -F enderecoUF={enderecoUF} \
+  -F enderecoCep={enderecoCep}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - idAluno: identificador do aluno no Sistema KAITS
+
+# inclui um responsável para um aluno
+curl -X POST "https://api.kaits.com.br/alunos/" \
+  -F acao=incluiResp \
+  -F token=SEU_TOKEN_AQUI \
+  -F idAluno={idAluno} \
+  -F idResp={idResp} \
+  -F relacionamento={relacionamento} \
+  -F ehFinanceiro={ehFinanceiro} \
+  -F ehPedagogico={ehPedagogico} \
+  -F dados={dados} \
+  -F nome={nome} \
+  -F codinome={codinome} \
+  -F nascimento={nascimento} \
+  -F email={email} \
+  -F dddFone={dddFone} \
+  -F fone={fone} \
+  -F dddCel={dddCel} \
+  -F cel={cel} \
+  -F CPF={CPF} \
+  -F RG={RG} \
+  -F enderecoRua={enderecoRua} \
+  -F enderecoNum={enderecoNum} \
+  -F enderecoCompl={enderecoCompl} \
+  -F enderecoBairro={enderecoBairro} \
+  -F enderecoCidade={enderecoCidade} \
+  -F enderecoUF={enderecoUF} \
+  -F enderecoCep={enderecoCep}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - idResp: identificador único do responsável
+
+# desvincula um responsável de um aluno
+curl -X POST "https://api.kaits.com.br/alunos/" \
+  -F acao=desvinculaResp \
+  -F token=SEU_TOKEN_AQUI \
+  -F idAluno={idAluno} \
+  -F idResp={idResp}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - idResp: identificador único do responsável
+
+# relacionamentos (entre responsáveis e alunos)
+curl -X POST "https://api.kaits.com.br/alunos/" \
+  -F acao=relacioResp \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - relacionamentos: uma lista com os possíveis relacionamentos entre responsáveis e alunos. Cada item da lista contém as chaves:
+#   - id: identificador do relacionamento
+#   - nome: nome do relacionamento
+
+# busca alunos excluídos
+curl -X POST "https://api.kaits.com.br/alunos/" \
+  -F acao=excluidos \
+  -F token=SEU_TOKEN_AQUI \
+  -F filtro={filtro} \
+  -F nome={nome} \
+  -F excluidoDe={excluidoDe} \
+  -F excluidoAte={excluidoAte}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - excluidos: uma lista com os alunos excluídos de acordo com os filtros com os seguintes campos:
+#   - idAluno: identificador do aluno no Sistema KAITS
+#   - nome: nome do aluno
+#   - dataExclusao: data da exclusão
+#   - horaExclusao: hora da exclusão
+#   - respExclusao: responsável pela exclusão
+#   - licencaIni: início da licença antes da exclusão)
+#   - licencaFim: término da licença antes da exclusão)
+#   - quantMatric: quantas matrículas o aluno tinha antes da exclusão
+
+# gêneros
+curl -X POST "https://api.kaits.com.br/alunos/" \
+  -F acao=generos \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - generos: uma lista com os possíveis gêneros. Cada item da lista contém as chaves:
+#   - id: identificador do gênero
+#   - nome: nome do gênero
+
+# campos de cadastro obrigatórios
+curl -X POST "https://api.kaits.com.br/alunos/" \
+  -F acao=camposObrig \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - campos: uma lista com os campos de cadastro obrigatórios
+
+============================================================
+=== AULAS ===
+============================================================
+
+# cadastra aula
+curl -X POST "https://api.kaits.com.br/aulas/" \
+  -F acao=criaAula \
+  -F token=SEU_TOKEN_AQUI \
+  -F aula={aula} \
+  -F turma={turma} \
+  -F data={data} \
+  -F hora={hora} \
+  -F tempo={tempo} \
+  -F curriculo={curriculo} \
+  -F nome={nome} \
+  -F professor={professor} \
+  -F sala={sala} \
+  -F modalidade={modalidade} \
+  -F aulaRep={aulaRep} \
+  -F remunera={remunera} \
+  -F "C"={\"C\"} \
+  -F "E"={\"E\"} \
+  -F "T"={\"T\"} \
+  -F "P"={\"P\"} \
+  -F valor={valor} \
+  -F remuneraTipo={remuneraTipo} \
+  -F exemplo:={exemplo:}
+# Resposta:
+#   - sucesso: sucesso da gravação da aula (bit: "0" ou "1")
+#   - idAula: identificador único da aula criada
+#   - msg: array com mensagens de erro (se sucesso = 0)
+
+# busca as aulas de uma turma
+curl -X POST "https://api.kaits.com.br/aulas/" \
+  -F acao=aulasTurma \
+  -F token=SEU_TOKEN_AQUI \
+  -F idTurm={idTurm}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - aulas: uma lista com as aulas da turma informada com os seguintes campos:
+#   - idAula: ID da aula
+#   - nome: nome da aula
+#   - data: data da aula (AAAA-MM-DD)
+#   - hora: hora do início da aula (hh:mm)
+#   - tempo: duração da aula em minutos
+#   - professor: ID do professor da aula (se houver mais de um professor na aula os IDs estarão separados por vírgula)
+#   - profNome: nome do professor da aula e sua função se estiver gravada (se houver mais de um professor na aula os nomes estarão separados por vírgula)
+#   - sala: ID da sala da aula
+#   - salaNome: nome da sala da aula
+#   - salaLink: URL para a sala da aula
+#   - modalidade: ID da modalidade da aula
+#   - modalidadeNome: nome da modalidade da aula
+#   - status: status da aula (prevista, realizada ou cancelada)
+
+# busca informações de uma aula
+curl -X POST "https://api.kaits.com.br/aulas/" \
+  -F acao=umaAula \
+  -F token=SEU_TOKEN_AQUI \
+  -F idAula={idAula}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - nome: nome da aula
+#   - data: data da aula (AAAA-MM-DD)
+#   - hora: hora do início da aula (hh:mm)
+#   - tempo: duração da aula em minutos
+#   - curso: ID do curso da aula
+#   - cursoNome: nome do curso da aula
+#   - estagio: ID do estágio da aula
+#   - estagioNome: nome do estágio da aula
+#   - turma: ID da turma da aula
+#   - turmaNome: nome da turma da aula
+#   - disciplina: ID da disciplina da aula
+#   - discipNome: nome da disciplina da aula
+#   - curriculo: currículo ministrado na aula
+#   - professor: ID do professor da aula (se houver mais de um professor na aula os IDs estarão separados por vírgula)
+#   - profNome: nome do professor da aula e sua função se estiver gravada (se houver mais de um professor na aula os nomes estarão separados por vírgula)
+#   - sala: ID da sala da aula
+#   - salaNome: nome da sala da aula
+#   - salaLink: URL para a sala da aula
+#   - modalidade: ID da modalidade da aula
+#   - modalidadeNome: nome da modalidade da aula
+#   - status: status da aula (prevista, realizada ou cancelada)
+#   - aulaReposta: se for uma aula de reposição, informa o ID da aula reposta
+#   - remuneracao: valor de remuneração do professor na aula
+#   - remuneraTipo: tipo da remuneração do professor: "1" - por aula, "2" - por hora
+#   - alunos: uma lista com as alunos que deveriam cursar a aula com os seguintes campos:
+#   - idMatric: ID da matrícula do aluno que está na aula
+#   - nome: nome do aluno
+#   - iniMatric: início da matrícula do aluno nesta turma (AAAA-MM-DD)
+#   - fimMatric: término da matrícula do aluno nesta turma (AAAA-MM-DD)
+#   - pres: presença do aluno na aula (bit: 0 ou 1)
+#   - tipoPres: tipo de presença do aluno na aula (se existirem tipos de presença cadastrados)
+#   - just: ID da justificativa da ausência do aluno na aula (se não presente)
+#   - justNome: texto da justificativa da ausência do aluno na aula
+#   - obs: observação sobre o aluno na aula
+
+# altera as informações de uma aula
+curl -X POST "https://api.kaits.com.br/aulas/" \
+  -F acao=editaAula \
+  -F token=SEU_TOKEN_AQUI \
+  -F idAula={idAula} \
+  -F status={status} \
+  -F nome={nome} \
+  -F professor={professor} \
+  -F sala={sala} \
+  -F modalidade={modalidade} \
+  -F curriculo={curriculo} \
+  -F podeRepor={podeRepor} \
+  -F idMotivCanc={idMotivCanc} \
+  -F obsCancel={obsCancel}
+# Resposta:
+#   - sucesso: sucesso da alteração (bit: "0" ou "1")
+#   - idAula: ID da aula editada
+#   - msg: mensagem de erro (se sucesso = 0)
+
+# registra as informações de um aluno na aula
+curl -X POST "https://api.kaits.com.br/aulas/" \
+  -F acao=infoAluno \
+  -F token=SEU_TOKEN_AQUI \
+  -F idAula={idAula} \
+  -F idMatric={idMatric} \
+  -F presenca={presenca} \
+  -F tipoPres={tipoPres} \
+  -F just={just} \
+  -F obs={obs}
+# Resposta:
+#   - sucesso: sucesso da alteração (bit: "0" ou "1")
+#   - idAula: ID da aula editada
+#   - idMatric: ID da matrícula (aluno) editada
+#   - msg: mensagem de erro (se sucesso = 0)
+
+# busca os professores da escola
+curl -X POST "https://api.kaits.com.br/aulas/" \
+  -F acao=prof \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - prof: uma lista com os professores habilitados da escola com os seguintes campos:
+#   - idProf: identificador do professor
+#   - nome: nome do professor
+#   - CPF: CPF do professor
+#   - RG: RG do professor
+#   - emails: e-mails cadastrados do professor separados por ponto e vírgula (;)
+
+# busca as salas da escola
+curl -X POST "https://api.kaits.com.br/aulas/" \
+  -F acao=salas \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - salas: uma lista com as salas da escola com os seguintes campos:
+#   - idSala: identificador da sala
+#   - nome: nome da sala
+
+# busca as modalidades de aula da escola
+curl -X POST "https://api.kaits.com.br/aulas/" \
+  -F acao=modalidades \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - modalidades: uma lista com as modalidades de aula da escola com os seguintes campos:
+#   - idModal: identificador da modalidade
+#   - nome: nome da modalidade
+
+# busca as justificativas de ausência da escola
+curl -X POST "https://api.kaits.com.br/aulas/" \
+  -F acao=just \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - just: uma lista com as justificativas da escola com os seguintes campos:
+#   - idJust: identificador da justificativa
+#   - texto: texto da justificativa
+
+# busca os tipos de presença da escola
+curl -X POST "https://api.kaits.com.br/aulas/" \
+  -F acao=tipoPres \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - tipoPres: uma lista com os tipos de presença da escola com os seguintes campos:
+#   - idTipoPres: identificador do tipo de presença
+#   - nome: nome do tipo de presença
+
+# busca os motivos de cancelamento da escola
+curl -X POST "https://api.kaits.com.br/aulas/" \
+  -F acao=motivCanc \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - salas: uma lista com os motivos de cancelamento da escola com os seguintes campos:
+#   - idMotivCanc: identificador do motivo de cancelamento
+#   - nome: nome exibido do motivo de cancelamento
+
+# busca as aulas que podem ser repostas
+curl -X POST "https://api.kaits.com.br/aulas/" \
+  -F acao=aulaRepor \
+  -F token=SEU_TOKEN_AQUI \
+  -F turma={turma} \
+  -F data={data}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - aulas: uma lista com as aulas que podem ser repostas com os seguintes campos:
+#   - idAula: identificador da aula
+#   - data: data de início da aula (AAAA-MM-DD)
+#   - hora: hora de início da aula (hh:mm)
+
+============================================================
+=== CURSOS ===
+============================================================
+
+# busca curso
+curl -X POST "https://api.kaits.com.br/cursos/" \
+  -F acao=curso \
+  -F token=SEU_TOKEN_AQUI \
+  -F idCurs={idCurs} \
+  -F nome={nome}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - cursos: uma lista com os cursos disponíveis da escola com os seguintes campos:
+#   - idCurs: identificador do curso no Sistema KAITS
+#   - nome: nome do curso
+#   - abrev: abreviação do curso
+#   - objetivo: objetivo(s) do curso
+#   - modalidade: modalidade do curso
+
+# busca estágio
+curl -X POST "https://api.kaits.com.br/cursos/" \
+  -F acao=estagio \
+  -F token=SEU_TOKEN_AQUI \
+  -F idCurs={idCurs}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - estagios: uma lista com os estágios disponíveis para o curso selecionado com os seguintes campos:
+#   - idCurs: identificador do curso no Sistema KAITS (somente se não for fornecido o idCurs)
+#   - idEst: identificador do estágio no Sistema KAITS
+#   - nome: nome do estágio
+#   - abrev: abreviação do estágio
+#   - objetivo: objetivo(s) do estágio
+#   - modalidade: modalidade do estágio
+
+# busca turma
+curl -X POST "https://api.kaits.com.br/cursos/" \
+  -F acao=turma \
+  -F token=SEU_TOKEN_AQUI \
+  -F idEst={idEst} \
+  -F ignoraVal={ignoraVal} \
+  -F incluiNaoDef={incluiNaoDef} \
+  -F observação:={observação:}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - turmas: uma lista com as turmas disponíveis para o estágio selecionado com os seguintes campos:
+#   - idEst: identificador do estágio no Sistema KAITS (somente se não for fornecido o idEst)
+#   - idTurm: identificador da turma no Sistema KAITS
+#   - nome: nome da turma no Sistema KAITS
+#   - limite: limite de matrículas ativas na turma (se cadastrado)
+#   - alemDoLimite: indicativo se podem haver matrículas além do limite da turma (bit: "0" ou "1")
+#   - ocupacao: quantas matrículas ativas existem na turma
+#   - ini: data de início da turma (DD/MM/AAAA)
+#   - fim: data de término da turma (DD/MM/AAAA)
+#   - coordenador: nome do coordenador da turma
+#   - modalidade: modalidade da turma
+#   - letivo: período letivo (se cadastrado)
+
+# busca disciplinas
+curl -X POST "https://api.kaits.com.br/cursos/" \
+  -F acao=disciplinas \
+  -F token=SEU_TOKEN_AQUI \
+  -F idEst={idEst} \
+  -F observação:={observação:}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - disciplinas: uma lista com os módulos das disciplinas do estágio selecionado com os seguintes campos:
+#   - idDiscip: identificador do módulo da disciplina
+#   - disciplina: nome da disciplina
+#   - abrevDiscip: abreviação da disciplina
+#   - modulo: nome do módulo vinculado ao estágio
+#   - abrevModulo: abreviação do módulo
+
+# busca valor
+curl -X POST "https://api.kaits.com.br/cursos/" \
+  -F acao=valores \
+  -F token=SEU_TOKEN_AQUI \
+  -F idTurm={idTurm} \
+  -F soMatric={soMatric}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - valores: uma lista com os valores de pagamento disponíveis para a turma selecionada. Cada item da lista com os seguintes campos:
+#   - id: identificador da taxa
+#   - nome: nome definido pela escola para esta taxa
+#   - tipo: dígito indicando a que o valor se refere:1: matrícula,2: material didático,3: valor total do curso,4: mensalidade
+#   - valor: numérico com duas casas decimais e vírgula (,) como separador de decimais
+#   - desconto: desconto aplicado ao valor
+#   - antecip: desconto aplicado ao valor se pago até o vencimento
+#   - vezes: quantidade de parcelas em que o valor total da taxa é dividido
+
+# busca separada
+curl -X POST "https://api.kaits.com.br/cursos/" \
+  -F acao=tudosepara \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - cursos: lista com todos os cursos
+#   - estágios: lista com todos os estágio
+#   - turmas: lista com todas as turma
+
+# busca o programa de um curso ou estágio
+curl -X POST "https://api.kaits.com.br/cursos/" \
+  -F acao=programa \
+  -F token=SEU_TOKEN_AQUI \
+  -F idCurs={idCurs} \
+  -F idEst={idEst}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - programa: uma lista com os tópicos do programa do curso ou estágio com os seguintes campos:
+#   - titulo: título do tópico
+#   - tempo: tempo em minutos do tópico
+#   - livro: livro do tópico
+#   - unidade: unidade do tópico
+#   - pagina: página do tópico
+#   - conteudo: conteúdo do tópico
+#   - tarefas: tarefas do tópico
+#   - objetivos: objetivos do tópico
+
+============================================================
+=== DOCUMENTOS ===
+============================================================
+
+# busca documentos emitidos pela escola
+curl -X POST "https://api.kaits.com.br/documentos/" \
+  -F acao=buscaDocs \
+  -F token=SEU_TOKEN_AQUI \
+  -F idAluno={idAluno} \
+  -F idMatric={idMatric} \
+  -F numMatric={numMatric} \
+  -F filtro={filtro} \
+  -F documento={documento} \
+  -F emitidoDe={emitidoDe} \
+  -F emitidoAte={emitidoAte}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - documentos: lista com os documentos emitidos:
+#   - idDocEmitido: identificação do documento emitido
+#   - nomeDoc: nome do modelo do documento
+#   - aluno: nome do aluno (se vinculado a um aluno)
+#   - curso: curso, estágio e turma da matrícula vinculada ao documento (se vinculado a uma matrícula)
+#   - numMatric: numero da matrícula (se vinculado a uma matrícula)
+#   - emissao: data da emissão do documento
+#   - comAceite: se o documento vincula um aceite online (1 ou 0)
+#   - aceitePor: nome do usuário que realizou o aceite online
+#   - aceiteEm: data e hora do aceite online
+
+# busca o conteúdo de um documento emitido
+curl -X POST "https://api.kaits.com.br/documentos/" \
+  -F acao=buscaConteudo \
+  -F token=SEU_TOKEN_AQUI \
+  -F idDocEmitido={idDocEmitido}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - conteudo: conteúdo do documento (em HTML)
+
+# grava o aceite online de um documento
+curl -X POST "https://api.kaits.com.br/documentos/" \
+  -F acao=aceite \
+  -F token=SEU_TOKEN_AQUI \
+  -F idDocEmitido={idDocEmitido} \
+  -F nomeAceite={nomeAceite} \
+  -F cpfAceite={cpfAceite}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - idDocEmitido: identificação do documento emitido
+#   - aceitePor: nome do usuário que realizou o aceite online
+#   - aceiteEm: data e hora do aceite online
+
+============================================================
+=== EMPRESAS ===
+============================================================
+
+# busca empresas
+curl -X POST "https://api.kaits.com.br/empresas/" \
+  -F acao=buscaEmpresas \
+  -F token=SEU_TOKEN_AQUI \
+  -F filtro={filtro} \
+  -F nome={nome} \
+  -F CNPJ={CNPJ}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - empresas: uma lista com as empresas de acordo com os filtros com os seguintes campos:
+#   - idEmpresa: identificador único da empresa
+#   - nome: nome da empresa
+#   - razaoSocial: razão social da empresa
+#   - CNPJ: CNPJ da empresa
+
+# informações de uma empresa
+curl -X POST "https://api.kaits.com.br/empresas/" \
+  -F acao=umaEmpresa \
+  -F token=SEU_TOKEN_AQUI \
+  -F idEmpresa={idEmpresa}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - idEmpresa: identificador único da empresa
+#   - nome: nome da empresa
+#   - razaoSocial: razão social da empresa
+#   - CNPJ: CNPJ da empresa
+#   - inscrEstadual: inscrição estadual da empresa
+#   - obs: observação da empresa
+#   - email: e-mail corporativo da empresa
+#   - dddFone: DDD do telefone corporativo da empresa
+#   - fone: número do telefone corporativo da empresa
+#   - dddCel: DDD do telefone celular da empresa
+#   - cel: número do celular da empresa
+#   - enderecoRua: logradouro corporativo da empresa
+#   - enderecoNum: número corporativo da empresa
+#   - enderecoCompl: complemento corporativo da empresa
+#   - enderecoBairro: bairro corporativo da empresa
+#   - enderecoCidade: cidade (constante no IBGE com o UF informado) corporativo da empresa
+#   - enderecoUF: estado (UF) corporativo da empresa
+#   - enderecoCep: CEP corporativo da empresa
+#   - gestores: lista com os nomes e e-mails dos gestores ativos da empresa
+#   - alunos: lista com idAluno e nome dos alunos ativos da empresa
+
+# edita ou inclui uma empresa
+curl -X POST "https://api.kaits.com.br/empresas/" \
+  -F acao=editaEmpresa \
+  -F token=SEU_TOKEN_AQUI \
+  -F idEmpresa={idEmpresa} \
+  -F dados={dados} \
+  -F nome={nome} \
+  -F razaoSocial={razaoSocial} \
+  -F CNPJ={CNPJ} \
+  -F inscrEstadual={inscrEstadual} \
+  -F obs={obs} \
+  -F email={email} \
+  -F dddFone={dddFone} \
+  -F fone={fone} \
+  -F dddCel={dddCel} \
+  -F cel={cel} \
+  -F enderecoRua={enderecoRua} \
+  -F enderecoNum={enderecoNum} \
+  -F enderecoCompl={enderecoCompl} \
+  -F enderecoBairro={enderecoBairro} \
+  -F enderecoCidade={enderecoCidade} \
+  -F enderecoUF={enderecoUF} \
+  -F enderecoCep={enderecoCep}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - idEmpresa: identificador único da empresa
+
+============================================================
+=== ESTOQUE ===
+============================================================
+
+# busca os itens de estoque da escola
+curl -X POST "https://api.kaits.com.br/estoque/" \
+  -F acao=buscaItens \
+  -F token=SEU_TOKEN_AQUI \
+  -F filtro={filtro} \
+  -F idItem={idItem} \
+  -F nome={nome}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - itens: lista com os itens de estoque cadastrados pela escola:
+#   - idItem: identificador do item
+#   - nome: nome do item
+#   - codigo: código do item
+#   - itensKit: se o item é um kit retorna o conjunto de itens que compôem o kit
+#   - quant: quantidade em estoque
+#   - dispVenda: quantidade disponível para venda
+
+# realizar uma venda de item do estoque
+curl -X POST "https://api.kaits.com.br/estoque/" \
+  -F acao=venda \
+  -F token=SEU_TOKEN_AQUI \
+  -F idItem={idItem} \
+  -F qtdeVenda={qtdeVenda} \
+  -F qtdeEntregue={qtdeEntregue} \
+  -F data={data} \
+  -F idAluno={idAluno} \
+  -F idMatric={idMatric} \
+  -F cortesia={cortesia} \
+  -F valorUnitario={valorUnitario} \
+  -F vencimento={vencimento} \
+  -F idConta={idConta}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - idVenda: identificador da venda (para poder realizar uma entrega posterior)
+#   - data: data da realização da venda
+#   - qtdeVenda: quantidade de itens vendidos
+#   - qtdeEntregue: quantidade de itens entregues
+#   - valorUnitario: valor unitário de cada item
+#   - valorTotal: valor total da venda
+#   - idPagto: identificador do lançamento financeiro
+#   - vencimento: vencimento do lançamento financeiro
+#   - linkBoleto: link do boleto (se for gerado boleto)
+#   - linhaDigitavel: linha digitável do boleto (se for gerado boleto)
+
+# busca as vendas de um item de estoque da escola
+curl -X POST "https://api.kaits.com.br/estoque/" \
+  -F acao=buscaVendas \
+  -F token=SEU_TOKEN_AQUI \
+  -F idItem={idItem}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - vendas: lista com as vendas cadastradas para o item de estoque definido:
+#   - idVenda: identificador da venda
+#   - quantVend: quantidade vendida
+#   - quantEntreg: quantidade já entregue
+#   - valorUnitario: valor unitário de cada item
+#   - data: data da realização da venda
+#   - vinculo: nome do aluno ou usuário vinculado à venda
+#   - idMatric: identificador de uma matrícula (se vinculada à venda)
+#   - turma: turma da matrícula vinculada à venda
+#   - estagio: estágio da matrícula vinculada à venda
+#   - curso: curso da matrícula vinculada à venda
+
+# realizar uma entrega de uma venda realizada
+curl -X POST "https://api.kaits.com.br/estoque/" \
+  -F acao=entrega \
+  -F token=SEU_TOKEN_AQUI \
+  -F idVenda={idVenda} \
+  -F qtdeEntregue={qtdeEntregue} \
+  -F data={data}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - idVenda: identificador da venda (para poder realizar uma entrega posterior)
+#   - qtdeVenda: quantidade de itens vendidos
+#   - qtdeEntregue: quantidade de itens desta venda já entregues
+
+============================================================
+=== INTERESSADOS ===
+============================================================
+
+# cadastro
+curl -X POST "https://api.kaits.com.br/interessados/" \
+  -F acao=cadastro \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da gravação (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - id: identificador do interessado no Sistema KAITS
+
+# busca interessados
+curl -X POST "https://api.kaits.com.br/interessados/" \
+  -F acao=buscaInteressados \
+  -F token=SEU_TOKEN_AQUI \
+  -F filtro={filtro} \
+  -F nome={nome} \
+  -F CPF={CPF} \
+  -F RG={RG} \
+  -F email={email}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - interessados: uma lista com os interessados de acordo com os filtros com os seguintes campos:
+#   - idInteressado: identificador do interessados no Sistema KAITS
+#   - nome: nome do interessado
+#   - codinome: codinome (nome social) do interessado
+#   - registro: registro do interessado
+#   - CPF: CPF do interessado
+#   - RG: RG do interessado
+#   - email: e-mail do interessado
+
+# como nos conheceu
+curl -X POST "https://api.kaits.com.br/interessados/" \
+  -F acao=comoConheceu \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - formas: uma lista ordenada com as possíveis formas de "como nos conheceu" da escola. Cada forma contém as chaves:
+#   - id: identificador da forma (para ser enviado no cadastro)
+#   - texto: texto a ser exibido ao usuário
+
+# localidades
+curl -X POST "https://api.kaits.com.br/interessados/" \
+  -F acao=localidades \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - localidades: uma lista ordenada com as localidades cadastradas pela escola. Cada localidade contém as chaves:
+#   - id: identificador da localidade (para ser enviado no cadastro)
+#   - nome: nome atualizado da localidade cadastrada pela escola
+
+# tipos de interesse
+curl -X POST "https://api.kaits.com.br/interessados/" \
+  -F acao=tipos \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - tipos: uma lista ordenada com os tipos de interesse cadastrados pela escola. Cada tipo contém as chaves:
+#   - id: identificador do tipo (para ser enviado no cadastro)
+#   - nome: nome atualizado do tipo cadastrado pela escola
+
+# idiomas (nos quais a escola tenha cursos cadastrados)
+curl -X POST "https://api.kaits.com.br/interessados/" \
+  -F acao=idiomas \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - idiomas: uma lista ordenada com os idiomas nos quais a escola tenha cursos cadastrados. Cada idioma contém as chaves:
+#   - id: identificador do idioma (para ser enviado no cadastro)
+#   - nome: nome atualizado do idioma cadastrado pela escola
+
+# cidades cadastradas
+curl -X POST "https://api.kaits.com.br/interessados/" \
+  -F acao=cidades \
+  -F token=SEU_TOKEN_AQUI \
+  -F cidade={cidade}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - cidades: uma lista ordenada com as cidades cadastradas pela escola. Cada cidade contém as chaves:
+#   - id: identificador da cidade (para ser enviado nos endereços)
+#   - nome: nome da cidade
+#   - uf: UF (estado) da cidade
+#   - pais: país da cidade
+#   - ibge: código da cidade no IBGE (se existir)
+
+# cidades pelo IBGE
+curl -X POST "https://api.kaits.com.br/interessados/" \
+  -F acao=ibge \
+  -F token=SEU_TOKEN_AQUI \
+  -F UF={UF} \
+  -F cidade={cidade}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - cidades: uma lista ordenada com as cidades informadas pelo IBGE. Cada cidade contém as chaves:
+#   - nome: nome da cidade
+#   - ibge: código da cidade no IBGE
+
+# cadastrar uma cidade na escola
+curl -X POST "https://api.kaits.com.br/interessados/" \
+  -F acao=novaCidade \
+  -F token=SEU_TOKEN_AQUI \
+  -F ibge={ibge}
+# Resposta:
+#   - sucesso: sucesso da inclusão (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - id: identificador da cidade (para ser enviado nos endereços)
+#   - nome: nome da cidade
+#   - uf: UF (estado) da cidade
+#   - pais: país da cidade
+#   - ibge: código da cidade no IBGE
+#   - jaExistia: retorna TRUE se a cidade já estava cadastrada na escola anteriormente (neste caso não é duplicada a cidade, mas retorna a anteriormente cadastrada)
+
+============================================================
+=== MATRICULAS ===
+============================================================
+
+# realiza matrícula (método POST)
+curl -X POST "https://api.kaits.com.br/matriculas/" \
+  -F acao=matricula \
+  -F token=SEU_TOKEN_AQUI \
+  -F usu={usu} \
+  -F nome={nome} \
+  -F registro={registro} \
+  -F nasc={nasc} \
+  -F genero={genero} \
+  -F localidade={localidade} \
+  -F comoConheceu={comoConheceu} \
+  -F cpf={cpf} \
+  -F rg={rg} \
+  -F email={email} \
+  -F dddFoneRes={dddFoneRes} \
+  -F foneRes={foneRes} \
+  -F dddFoneCel={dddFoneCel} \
+  -F foneCel={foneCel} \
+  -F pais={pais} \
+  -F estado={estado} \
+  -F cidade={cidade} \
+  -F rua={rua} \
+  -F num={num} \
+  -F compl={compl} \
+  -F bairro={bairro} \
+  -F cep={cep} \
+  -F obsAluno={obsAluno} \
+  -F obsMatric={obsMatric} \
+  -F inicio={inicio} \
+  -F termino={termino} \
+  -F idModalidade={idModalidade} \
+  -F idSitPed={idSitPed} \
+  -F idSitFin={idSitFin} \
+  -F idCurs={idCurs} \
+  -F idEst={idEst} \
+  -F idTurm={idTurm} \
+  -F idTaxa={idTaxa} \
+  -F patroTaxaID={patroTaxaID} \
+  -F patroTaxaValor={patroTaxaValor} \
+  -F patroTaxaTipo={patroTaxaTipo} \
+  -F idMatDid={idMatDid} \
+  -F patroMatDidID={patroMatDidID} \
+  -F patroMatDidValor={patroMatDidValor} \
+  -F patroMatDidTipo={patroMatDidTipo} \
+  -F idPagtos={idPagtos} \
+  -F patroPagtosID={patroPagtosID} \
+  -F patroPagtosValor={patroPagtosValor} \
+  -F patroPagtosTipo={patroPagtosTipo} \
+  -F dataPrimParc={dataPrimParc} \
+  -F diaParcelas={diaParcelas} \
+  -F idConta={idConta} \
+  -F resp={resp} \
+  -F nome={nome} \
+  -F nasc={nasc} \
+  -F genero={genero} \
+  -F cpf={cpf} \
+  -F rg={rg} \
+  -F email={email} \
+  -F dddFoneRes={dddFoneRes} \
+  -F foneRes={foneRes} \
+  -F dddFoneCel={dddFoneCel} \
+  -F foneCel={foneCel} \
+  -F pais={pais} \
+  -F estado={estado} \
+  -F cidade={cidade} \
+  -F rua={rua} \
+  -F num={num} \
+  -F compl={compl} \
+  -F bairro={bairro} \
+  -F cep={cep} \
+  -F pedag={pedag} \
+  -F nome={nome} \
+  -F nasc={nasc} \
+  -F genero={genero} \
+  -F cpf={cpf} \
+  -F rg={rg} \
+  -F email={email} \
+  -F dddFoneRes={dddFoneRes} \
+  -F foneRes={foneRes} \
+  -F dddFoneCel={dddFoneCel} \
+  -F foneCel={foneCel} \
+  -F pais={pais} \
+  -F estado={estado} \
+  -F cidade={cidade} \
+  -F rua={rua} \
+  -F num={num} \
+  -F compl={compl} \
+  -F bairro={bairro} \
+  -F cep={cep}
+# Resposta:
+#   - sucesso: sucesso da gravação da matrícula (bit: "0" ou "1")
+#   - pagto: array com idPagto e com o valor (se forem gerados boletos também são retornados o link do boleto e a linha digitável)
+#   - idMatric: identificador único da matrícula criada
+#   - numMatric: número da matrícula criada
+#   - msg: mensagem de erro (se sucesso = 0)
+
+# busca movimentações de matrículas
+curl -X POST "https://api.kaits.com.br/matriculas/" \
+  -F acao=moviment \
+  -F token=SEU_TOKEN_AQUI \
+  -F idMatric={idMatric} \
+  -F idAlun={idAlun} \
+  -F idCurs={idCurs} \
+  -F idEst={idEst} \
+  -F idTurm={idTurm} \
+  -F movDe={movDe} \
+  -F movAte={movAte}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - matriculas: uma lista com as matrículas selecionadas com os seguintes campos:
+#   - idMatric: ID da matrícula
+#   - numMatric: número da matrícula
+#   - idAlun: ID do aluno
+#   - aluno: nome do aluno
+#   - idCurs: ID do curso
+#   - curso: nome do curso
+#   - idEst: ID do estágio
+#   - estagio: nome do estágio
+#   - idTurm: ID da turma
+#   - turma: nome da turma
+#   - moviment: uma lista com as movimentações desta matrícula com os seguintes campos:
+#   - data: data da movimentação (AAAA-MM-DD)
+#   - tipo: tipo de movimentação: 1. início da matrícula2. troca de turma3. término da matrícula4. alteração de situação pedagógica
+#   - curso: nome do curso para o qual foi transferida (se início da matrícula ou troca de turma)
+#   - estagio: nome do estágio para o qual foi transferida (se início da matrícula ou troca de turma)
+#   - turma: nome da turma para a qual foi transferida (se início da matrícula ou troca de turma)
+#   - finalizacao: tipo de finalização da matrícula (se término da matrícula)
+#   - situacao: situação pedagógica da matrícula (se alteração de situação)
+
+# busca as modalidades de matrícula
+curl -X POST "https://api.kaits.com.br/matriculas/" \
+  -F acao=modalidades \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - modalidades: uma lista com as modalidades de matrícula da escola com os seguintes campos:
+#   - idModalidade: identificador da modalidade de matrícula
+#   - nome: nome da modalidade de matrícula
+
+# altera a situação de uma matrícula
+curl -X POST "https://api.kaits.com.br/matriculas/" \
+  -F acao=situacao \
+  -F token=SEU_TOKEN_AQUI \
+  -F numMatric={numMatric} \
+  -F idSit={idSit}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - numMatric: número da matrícula atualizada
+
+# busca as disciplinas de uma matrícula
+curl -X POST "https://api.kaits.com.br/matriculas/" \
+  -F acao=disciplinas \
+  -F token=SEU_TOKEN_AQUI \
+  -F idMatric={idMatric} \
+  -F numMatric={numMatric}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - disciplinas: uma lista com os módulos das disciplinas do estágio selecionado com os seguintes campos:
+#   - idDiscip: identificador do módulo da disciplina
+#   - disciplina: nome da disciplina
+#   - abrevDiscip: abreviação da disciplina
+#   - modulo: nome do módulo vinculado ao estágio
+#   - abrevModulo: abreviação do módulo
+
+============================================================
+=== NOTAS ===
+============================================================
+
+# busca notas de uma matrícula
+curl -X POST "https://api.kaits.com.br/notas/" \
+  -F acao=buscaNotas \
+  -F token=SEU_TOKEN_AQUI \
+  -F idMatric={idMatric} \
+  -F numMatric={numMatric}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - avaliacoes: lista com os sistemas de avaliação aplicados à matrícula:
+#   - disciplina: de qual disciplina esta avaliação faz parte (se a matrícula estiver vinculada a disciplinas)
+#   - nome: nome do sistema de avaliação
+#   - idAval: ID do sistema de avaliação
+#   - tipoNota: tipo da nota do sistema de avaliação: numerico, alfabetico, conceitos ou livre
+#   - notaMin: nota mínima do sistema de avaliação
+#   - notaMax: nota máxima do sistema de avaliação
+#   - qualPrincipal: qual a nota principal do sistema de avaliação (tópico_parcial)
+#   - notaPrincipal: valor da nota principal do sistema de avaliação
+#   - totalizacao: totalização dos tópico e parciais (se tiver): medias ou totais
+#   - total: total ou média da avaliação completa (se houver totalizacao)
+#   - situacaoFinal: situacao final (se houver)
+#   - topicos: lista com os tópicos avaliados:
+#   - nome: nome do tópico
+#   - peso: peso do tópico (se for nota numérica)
+#   - total: total ou média do tópico (se tiver)
+#   - parciais: lista com as parciais avaliadas do tópico:
+#   - nome: nome da parcial
+#   - peso: peso da parcial (se for nota numérica)
+#   - nota: nota da parcial (se tiver)
+#   - subtopicos: lista com sub-tópicos (se existirem para cada tópico):
+#   - nome: nome do sub-tópico
+#   - nota: nota do sub-tópico (se tiver)
+#   - totaisParciais: lista com os totais das parciais (se tiver totais ou médias):
+#   - nome: nome da parcial
+#   - total: total ou média da parcial
+#   - comentariosParciais: lista com comentários das parciais (se existirem parciais com comentários):
+#   - nome: nome da parcial
+#   - coment: comentário da parcial
+
+# busca sistemas de avaliação
+curl -X POST "https://api.kaits.com.br/notas/" \
+  -F acao=buscaSist \
+  -F token=SEU_TOKEN_AQUI \
+  -F filtro={filtro} \
+  -F nome={nome} \
+  -F ativo={ativo} \
+  -F aplicacao={aplicacao}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - sistemas: uma lista com os sistemas de avaliação da escola de acordo com os filtros com os seguintes campos:
+#   - id: id do sistema de avaliação
+#   - nome: nome do sistema de avaliação
+#   - ativo: 1: ativo, 2: inativo
+#   - aplicacao: a que o sistema de avaliação se refere: 1: notas, 2: testes, 3: boletim
+#   - tipoNota: tipo de nota -> 1: numérico, 2: alfabético, 3: conceitos, 4: livre
+#   - notaMin: nota mínima
+#   - notaMax: nota máxima
+#   - totalizacao: 0: sem totalizações, 1; com médias, 2: com totais
+#   - precisao: variação das notas
+#   - arredondamento: arredondamento dos totais
+#   - considNotaEmBranco: considera notas em branco nas médias -> 0: não, 1: sim
+#   - mediaParcial: exibe média ou total por parcial -> 0: não, 1: sim
+#   - mediaTopico: exibe média ou total por tópico -> 0: não, 1: sim
+#   - temPrincipal: tem nota principal -> 0: não, 1: sim
+#   - principal: nota principal do sistema de avaliação
+#   - parteBoletim: faz parte de um boletim -> 0: não, 1: sim
+#   - vincBoletim: a qual boletim está vinculado
+#   - topicos: lista com os tópicos do sistema de avaliação com:
+#   - id: id do tópico
+#   - nome: nome do tópico
+#   - peso: peso do tópico
+#   - max: nota máxima do tópico
+#   - ordem: ordem do tópico
+#   - subtopicos: lista com subtopicos com:
+#   - id: id do subtopico
+#   - nome: nome do subtopico
+#   - peso: peso do subtopico
+#   - max: nota máxima do subtopico
+#   - tipoNota: tipo de nota específico do subtopico (os tipos 5:"dados gravado" e 6:"nota calculada" são automáticos do sistema, não editáveis)
+#   - precisao: precisão específica do subtopico
+#   - parciais: lista com as parciais do sistema de avaliação com:
+#   - id: id da parcial
+#   - nome: nome da parcial
+#   - peso: peso da parcial
+#   - max: nota máxima da parcial
+#   - ordem: ordem da parcial
+#   - coment: parcial com comentários -> 0: não, 1: sim
+#   - origem: origem da parcial -> 0: nota de outra avaliação, 1: nota a ser atribuída, 2: nota a ser calculada
+#   - tipoCalculo: tipo de cálculo da parcial -> 0: média, 1: soma, 2: maior, 3: média desde que acima da marcada
+#   - calcFinal: só calcula a parcial se todos parciais preenchidos -> 0: não, 1: sim
+#   - exibeDoc: exibe a parcial no boletim -> 0: não, 1: sim
+#   - abrev: abreviação da parcial mostrada no boletim
+#   - parciaisCalc: lista das parciais de cálculo com:
+#   - parcial: id da parcial de cálculo
+#   - peso: peso da parcial de cálculo
+#   - marcada: parcial de cálculo marcada (para limite do cálculo da média) -> 0: não, 1: sim
+#   - sitFinal: lista com as situações finais do sistema de avaliação com:
+#   - id: id da situação final
+#   - nome: nome da situação final
+#   - ordem: ordem da situação final
+#   - conceitos: lista com os conceitos do sistema de avaliação com:
+#   - id: id do conceito
+#   - nome: nome do conceito
+#   - ordem: ordem do conceito
+
+# grava notas de uma matrícula
+curl -X POST "https://api.kaits.com.br/notas/" \
+  -F acao=gravaNotas \
+  -F token=SEU_TOKEN_AQUI \
+  -F idMatric={idMatric} \
+  -F numMatric={numMatric} \
+  -F idAval={idAval} \
+  -F notas={notas} \
+  -F idTopico={idTopico} \
+  -F idSubtopico={idSubtopico} \
+  -F idParcial={idParcial} \
+  -F nota={nota} \
+  -F sitFinal={sitFinal} \
+  -F idDisciplina={idDisciplina} \
+  -F comentarios={comentarios} \
+  -F idParcial={idParcial} \
+  -F texto={texto}
+# Resposta:
+#   - sucesso: sucesso da gravação (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+
+============================================================
+=== PAGAMENTOS ===
+============================================================
+
+# inclui pagamento
+curl -X POST "https://api.kaits.com.br/pagamentos/" \
+  -F acao=inclui \
+  -F token=SEU_TOKEN_AQUI \
+  -F pagto={pagto} \
+  -F idMatric={idMatric} \
+  -F venc={venc} \
+  -F idCat={idCat} \
+  -F integrado={integrado} \
+  -F idMoeda={idMoeda} \
+  -F valor={valor} \
+  -F desconto={desconto} \
+  -F tipoDesconto={tipoDesconto} \
+  -F extra={extra} \
+  -F tipoExtra={tipoExtra} \
+  -F idFormaPrev={idFormaPrev}
+# Resposta:
+#   - sucesso: sucesso da inclusão do pagamento (bit: "0" ou "1")
+#   - idPagto: id do lançamento incluído
+#   - msg: mensagem de erro (se sucesso = 0)
+
+# confirma pagamento
+curl -X POST "https://api.kaits.com.br/pagamentos/" \
+  -F acao=confirma \
+  -F token=SEU_TOKEN_AQUI \
+  -F pagto={pagto} \
+  -F idPagto={idPagto} \
+  -F dataPago={dataPago} \
+  -F forma={forma} \
+  -F desconto={desconto} \
+  -F tipoDesconto={tipoDesconto} \
+  -F extra={extra} \
+  -F tipoExtra={tipoExtra}
+# Resposta:
+#   - sucesso: sucesso da confirmação do pagamento (bit: "0" ou "1")
+#   - valorPago: valor pago (com desconto e extra enviados) do pagamento
+#   - msg: mensagem de erro (se sucesso = 0)
+
+# busca formas de pagamento
+curl -X POST "https://api.kaits.com.br/pagamentos/" \
+  -F acao=forma \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - formas: uma lista com as formas de pagamento com os seguintes campos:
+#   - idForma: identificador da forma de pagamento
+#   - nome: nome da forma de pagamento
+
+# busca categorias de pagamento
+curl -X POST "https://api.kaits.com.br/pagamentos/" \
+  -F acao=categoria \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - categorias: uma lista com as categorias de pagamento com os seguintes campos:
+#   - idCat: identificador da categoria de pagamento
+#   - nome: nome da categoria de pagamento
+
+# busca contas financeiras da escola
+curl -X POST "https://api.kaits.com.br/pagamentos/" \
+  -F acao=contas \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - contas: uma lista com as contas financeiras ativas com os seguintes campos:
+#   - idConta: identificador da conta
+#   - nome: nome da conta
+
+# busca ficha financeira de um aluno
+curl -X POST "https://api.kaits.com.br/pagamentos/" \
+  -F acao=finanAluno \
+  -F token=SEU_TOKEN_AQUI \
+  -F idAluno={idAluno} \
+  -F idMatric={idMatric} \
+  -F semMatric={semMatric} \
+  -F idCat={idCat}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - pagtos: uma lista com pagamentos do aluno ou da matrícula, com os campos:
+#   - idAluno: identificador do aluno
+#   - idMatric: identificador da matrícula (se estiver vinculado a uma matrícula)
+#   - numMatric: número da matrícula na escola (se estiver vinculado a uma matrícula)
+#   - idPagto: identificador do lançamento financeiro
+#   - cat: nome da categoria do pagamento
+#   - status: "previsto", "vencido" ou "pago"
+#   - parcela: número da parcela a que o pagameno se refere
+#   - curso: nome do curso (se estiver vinculado a uma matrícula)
+#   - estagio: nome do estágio (se estiver vinculado a uma matrícula)
+#   - turma: nome da turma (se estiver vinculado a uma matrícula)
+#   - descricao: descrição completa do lançamento financeiro
+#   - vencimento: data de vencimento (AAAA-MM-DD)
+#   - previsao: data de previsão de pagamento (AAAA-MM-DD)
+#   - pagamento: data de pagamento se já realizado (AAAA-MM-DD)
+#   - valor: valor devido do pagamento
+#   - linkBoleto: link direto para acesso ao boleto (se houver)
+#   - boleto: linha digitável do boleto (se houver)
+
+# busca moedas utilizadas pela escola
+curl -X POST "https://api.kaits.com.br/pagamentos/" \
+  -F acao=moedas \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - moedas: uma lista com as moedas utilizadas pela escola com os seguintes campos:
+#   - idMoeda: identificador da moeda
+#   - nome: nome da moeda
+#   - codigo: código da moeda (ISO 4217)
+#   - padrao: se é ou não a moeda padrão da escola (1 ou 0)
+
+============================================================
+=== RELATÓRIOS ===
+============================================================
+
+# busca relatórios disponíveis
+curl -X POST "https://api.kaits.com.br/relat/" \
+  -F acao=relats \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - relats: uma lista com os relatórios disponíveis da escola com os seguintes campos:
+#   - idRelat: identificador do relatório
+#   - categoria: nome da categoria do relatório
+#   - nome: nome do relatório
+
+# busca parâmetros de um relatório
+curl -X POST "https://api.kaits.com.br/relat/" \
+  -F acao=param \
+  -F token=SEU_TOKEN_AQUI \
+  -F idRelat={idRelat}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - params: uma lista com os parâmetros do relatório com os seguintes campos:
+#   - idParam: identificador do parâmetro
+#   - nome: nome do parâmetro
+#   - opcoes: instruções ou lista de opções do parâmetro
+#   - obrigatorio: se o parâmetro é obrigatório para o retorno do relatório (0 ou 1)
+
+# busca dados de um relatório
+curl -X POST "https://api.kaits.com.br/relat/" \
+  -F acao=dados \
+  -F token=SEU_TOKEN_AQUI \
+  -F idRelat={idRelat} \
+  -F param={param} \
+  -F idParam={idParam} \
+  -F valor={valor}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - dados: uma lista com os dados do relatório (cada relatório retorna seus próprios campos)
+
+============================================================
+=== REMATRÍCULAS ===
+============================================================
+
+# realiza rematrícula
+curl -X POST "https://api.kaits.com.br/rematriculas/" \
+  -F acao=rematricula \
+  -F token=SEU_TOKEN_AQUI \
+  -F usu={usu} \
+  -F cpf={cpf} \
+  -F idAluno={idAluno} \
+  -F nome={nome} \
+  -F registro={registro} \
+  -F nasc={nasc} \
+  -F email={email} \
+  -F dddFoneRes={dddFoneRes} \
+  -F foneRes={foneRes} \
+  -F dddFoneCel={dddFoneCel} \
+  -F foneCel={foneCel} \
+  -F idCurs={idCurs} \
+  -F idEst={idEst} \
+  -F idTurm={idTurm} \
+  -F dataIni={dataIni} \
+  -F dataFim={dataFim} \
+  -F idModalidade={idModalidade} \
+  -F idSitPed={idSitPed} \
+  -F idSitFin={idSitFin} \
+  -F obsMatric={obsMatric} \
+  -F numMatric={numMatric} \
+  -F idTaxa={idTaxa} \
+  -F patroTaxaID={patroTaxaID} \
+  -F patroTaxaValor={patroTaxaValor} \
+  -F patroTaxaTipo={patroTaxaTipo} \
+  -F idMatDid={idMatDid} \
+  -F patroMatDidID={patroMatDidID} \
+  -F patroMatDidValor={patroMatDidValor} \
+  -F patroMatDidTipo={patroMatDidTipo} \
+  -F idPagtos={idPagtos} \
+  -F patroPagtosID={patroPagtosID} \
+  -F patroPagtosValor={patroPagtosValor} \
+  -F patroPagtosTipo={patroPagtosTipo} \
+  -F dataPrimParc={dataPrimParc} \
+  -F diaParcelas={diaParcelas} \
+  -F idConta={idConta}
+# Resposta:
+#   - sucesso: sucesso da gravação da matrícula (bit: "0" ou "1")
+#   - idMatric: identificador único da matrícula criada
+#   - numMatric: número da matrícula criada
+#   - pagamentos: array com id, valor, parcela e vencimento dos pagamentos cadastrados, ordenados por vencimento (se forem gerados boletos também são retornados o link do boleto e a linha digitável)
+#   - msg: mensagem de erro (se sucesso = 0)
+
+# busca matrículas aptas a serem rematriculadas
+curl -X POST "https://api.kaits.com.br/rematriculas/" \
+  -F acao=aptas \
+  -F token=SEU_TOKEN_AQUI \
+  -F filtros={filtros} \
+  -F nome={nome} \
+  -F cpf={cpf} \
+  -F cursos={cursos} \
+  -F estagios={estagios} \
+  -F turmas={turmas} \
+  -F iniDe={iniDe} \
+  -F iniAte={iniAte} \
+  -F fimDe={fimDe} \
+  -F fimAte={fimAte} \
+  -F sitPed={sitPed} \
+  -F sitFin={sitFin}
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - quant: quantidade de matrículas retornadas
+#   - matriculas: uma lista com as matrículas selecionadas pelos filtros com os seguintes campos:
+#   - nome: nome do aluno matriculado
+#   - cpf: cpf do alunomatriculado
+#   - curso: nome do curso da matrícula
+#   - estagio: nome do estágio da matrícula
+#   - turma: nome da turma da matrícula
+#   - ini: data de início da matrícula
+#   - fim: data de término da matrícula
+#   - sitPed: situação pedagógica atual da matrícula
+#   - sitFin: situação financeira atual da matrícula
+
+# busca situações pedagógicas de matrícula
+curl -X POST "https://api.kaits.com.br/rematriculas/" \
+  -F acao=sitPed \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - sitPed: uma lista com as situações pedagógicas de matrícula da escola com os seguintes campos:
+#   - idSit: identificador da situação pedagógica
+#   - nome: nome da situação pedagógica
+
+# busca situações financeiras de matrícula
+curl -X POST "https://api.kaits.com.br/rematriculas/" \
+  -F acao=sitFin \
+  -F token=SEU_TOKEN_AQUI
+# Resposta:
+#   - sucesso: sucesso da consulta (bit: "0" ou "1")
+#   - msg: mensagem de erro (se sucesso = 0)
+#   - sitFin: uma lista com as situações financeiras de matrícula da escola com os seguintes campos:
+#   - idSit: identificador da situação financeira
+#   - nome: nome da situação financeira
+

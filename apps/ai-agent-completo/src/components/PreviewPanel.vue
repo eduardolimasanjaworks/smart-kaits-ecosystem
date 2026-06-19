@@ -12,10 +12,19 @@ function isDimmed(sectionKey) { return props.activeSection && props.activeSectio
 const name = computed(() => props.config.assistantName || 'a I.A.')
 
 const toolDefs = [
-  { key: 'consultClasses', triggersKey: 'consultClassesTriggers', emoji: '🏫', label: 'consultar turmas e matérias' },
-  { key: 'checkSchedule',  triggersKey: 'checkScheduleTriggers',  emoji: '📅', label: 'verificar horários do aluno' },
-  { key: 'enrollStudent',  triggersKey: 'enrollStudentTriggers',  emoji: '✍️', label: 'iniciar processo de matrícula' },
-  { key: 'checkFinancial', triggersKey: 'checkFinancialTriggers', emoji: '💰', label: 'consultar situação financeira' },
+  { key: 'consultCourses', triggersKey: 'consultCoursesTriggers', emoji: '📚', label: 'consultar cursos', fields: ['curso', 'modalidade', 'objetivo'], sample: 'Hoje temos cursos como Inglês.' },
+  { key: 'consultStages', triggersKey: 'consultStagesTriggers', emoji: '🪜', label: 'consultar estágios do curso', fields: ['estágio', 'abreviação', 'objetivo'], sample: 'Esse curso tem níveis como Básico e Intermediário.' },
+  { key: 'consultClasses', triggersKey: 'consultClassesTriggers', emoji: '🏫', label: 'consultar turmas disponíveis', fields: ['turma', 'datas', 'ocupação'], sample: 'Encontrei a turma Sábados adultos 10-12.' },
+  { key: 'consultClassSchedule', triggersKey: 'consultClassScheduleTriggers', emoji: '🕒', label: 'consultar horários da turma', fields: ['data', 'hora', 'professor'], sample: 'A turma tem aulas aos sábados às 10:00.' },
+  { key: 'consultPricing', triggersKey: 'consultPricingTriggers', emoji: '💵', label: 'consultar valores da turma', fields: ['taxa', 'valor', 'parcelas'], sample: 'A taxa de matrícula está em R$ 200,00.' },
+  { key: 'checkFinancial', triggersKey: 'checkFinancialTriggers', emoji: '💰', label: 'consultar ficha financeira do aluno', fields: ['status', 'valor', 'boleto'], sample: 'Encontrei uma parcela vencida no valor de R$ 350,00.' },
+  { key: 'listClassStudents', triggersKey: 'listClassStudentsTriggers', emoji: '🧑‍🎓', label: 'consultar alunos da turma', fields: ['aluno', 'matrícula', 'turma'], sample: 'Na turma Inglês 3A encontrei alunos como João Silva.' },
+  { key: 'searchStudent', triggersKey: 'searchStudentTriggers', emoji: '🔎', label: 'buscar aluno por nome ou matrícula', fields: ['nome', 'CPF', 'e-mail'], sample: 'Localizei o aluno João Silva.' },
+  { key: 'getStudentDetails', triggersKey: 'getStudentDetailsTriggers', emoji: '🪪', label: 'abrir ficha completa do aluno', fields: ['responsáveis', 'telefones', 'endereços'], sample: 'A ficha mostra o aluno João Silva e seu responsável.' },
+  { key: 'consultCourseProgram', triggersKey: 'consultCourseProgramTriggers', emoji: '🧠', label: 'consultar programa do curso', fields: ['tópico', 'conteúdo', 'livro'], sample: 'Esse curso trabalha temas como apresentações e conversação inicial.' },
+  { key: 'consultTeachers', triggersKey: 'consultTeachersTriggers', emoji: '👨‍🏫', label: 'consultar professores', fields: ['nome', 'CPF', 'e-mails'], sample: 'Encontrei professores cadastrados como Ana Souza.' },
+  { key: 'consultDocuments', triggersKey: 'consultDocumentsTriggers', emoji: '📄', label: 'consultar documentos emitidos', fields: ['documento', 'aluno', 'emissão'], sample: 'Localizei um documento emitido para o aluno.' },
+  { key: 'enrollStudent', triggersKey: 'enrollStudentTriggers', emoji: '✍️', label: 'iniciar processo de matrícula', fields: ['nome', 'curso', 'contato'], sample: 'Já posso registrar o interesse no curso desejado.' },
 ]
 const activeTools = computed(() => toolDefs.filter(t => props.config.tools[t.key]))
 
@@ -149,7 +158,6 @@ function faqPreviewPauses(item) {
         <p v-if="!config.faqItems.length" class="block__empty">← Respostas para coisas óbvias (ex: endereço, horário)</p>
       </div>
 
-      <!-- removido até segunda ordem, recurso era um mock, removeremos enquanto não a integração com a api real
       <div class="block dimmable" :class="{ dimmed: isDimmed('tools') }">
         <div class="block__heading">
           <span class="block__dot" style="background:var(--c-tools)"/>
@@ -158,6 +166,22 @@ function faqPreviewPauses(item) {
         <div v-if="activeTools.length" class="tools-preview">
           <div v-for="tool in activeTools" :key="tool.key" class="tool-box">
             <div class="tool-box__title">{{ tool.emoji }} {{ tool.label }}</div>
+            <div class="tool-box__fields">
+              <span v-for="field in tool.fields" :key="field" class="tool-box__field">{{ field }}</span>
+            </div>
+            <div class="tool-box__chat">
+              <div class="tool-box__bubble tool-box__bubble--user">
+                <span class="tool-box__bubble-role">Pessoa</span>
+                <p>“{{ (config.tools[tool.key + 'Instructions'] || 'Quando essa situação acontecer?').trim() }}”</p>
+              </div>
+              <div class="tool-box__bubble tool-box__bubble--ai">
+                <span class="tool-box__bubble-role">I.A.</span>
+                <p>{{ tool.sample }}</p>
+              </div>
+            </div>
+            <div v-if="config.tools[tool.key + 'Instructions']" class="tool-box__usage">
+              <strong>Quando usar:</strong> {{ config.tools[tool.key + 'Instructions'] }}
+            </div>
             <div v-for="(trig, idx) in (config.tools[tool.triggersKey] || [])" :key="trig.id" class="tool-box__trigger">
               <span class="badge-count">{{ idx + 1 }}</span>
               <div style="flex:1">
@@ -169,7 +193,6 @@ function faqPreviewPauses(item) {
         </div>
         <p v-else class="block__empty">← Nenhuma integração ativada ainda</p>
       </div>
-      -->
 
     </div>
   </section>
@@ -234,6 +257,17 @@ function faqPreviewPauses(item) {
 .tools-preview { display: flex; flex-direction: column; gap: .8rem; }
 .tool-box { background: white; border: 1.5px solid #bfdbfe; border-radius: var(--r-md); padding: .85rem 1rem; box-shadow: var(--shadow-sm); }
 .tool-box__title { font-size: .9rem; font-weight: 700; color: #1e3a8a; margin-bottom: .6rem; display: flex; align-items: center; gap: .4rem; }
+.tool-box__fields { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .6rem; }
+.tool-box__field { display: inline-flex; align-items: center; padding: .18rem .5rem; border-radius: 999px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; font-size: .72rem; font-weight: 700; }
+.tool-box__chat { display: flex; flex-direction: column; gap: .45rem; margin-bottom: .5rem; }
+.tool-box__bubble { display: flex; flex-direction: column; gap: .2rem; max-width: 92%; padding: .6rem .7rem; border-radius: 12px; }
+.tool-box__bubble p { margin: 0; font-size: .8rem; line-height: 1.45; }
+.tool-box__bubble-role { font-size: .63rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.tool-box__bubble--user { align-self: flex-start; background: #f8fafc; border: 1px solid #dbeafe; color: #334155; }
+.tool-box__bubble--user .tool-box__bubble-role { color: #1d4ed8; }
+.tool-box__bubble--ai { align-self: flex-end; background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+.tool-box__bubble--ai .tool-box__bubble-role { color: #15803d; }
+.tool-box__usage { font-size: .8rem; color: var(--c-text); background: #f8fafc; border-radius: 8px; padding: .55rem .65rem; margin-bottom: .5rem; line-height: 1.45; }
 .tool-box__trigger { display: flex; align-items: flex-start; gap: .6rem; font-size: .85rem; background: #f8fafc; padding: .5rem; border-radius: 6px; }
 
 </style>
